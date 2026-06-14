@@ -1,6 +1,2 @@
 node_modules/
 *.pkl
-training_session.csv
-*.csv
-__pycache__/
-*.pyc
