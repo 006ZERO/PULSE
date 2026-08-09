@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "start": "node backends/server.js",
+    "workshop:check": "node tools/workshop-check.js"
+  },
   "dependencies": {
     "express": "^5.2.1",
     "ws": "^8.20.0"

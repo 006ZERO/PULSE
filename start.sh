@@ -4,22 +4,29 @@ cd "$(dirname "$0")"
 
 pkill -f "./backend"        2>/dev/null
 pkill -f "simulator_stress" 2>/dev/null
-pkill -f "node server.js"   2>/dev/null
+pkill -f "node backends/server.js" 2>/dev/null
 pkill -f "processor.py"     2>/dev/null
 sleep 1
 
+node tools/workshop-check.js --files-only || exit 1
+
 ./backend &
 sleep 1
-./simulator_stress &
+if [ "${PULSE_SOURCE:-hardware}" = "simulator" ]; then
+  ./simulator_stress &
+else
+  ./src/rpi_sensor &
+fi
 sleep 1
-node backend/server.js &
+node backends/server.js &
 sleep 2
-python3 backend/processor.py &
+python3 backends/processor.py &
 
 echo ""
 echo "=============================="
-echo "  Sport-Tech is running!"
+echo "  PULSE is running!"
 echo "  Open: http://localhost:3000"
+echo "  Check: npm run workshop:check"
 echo "=============================="
 
 wait

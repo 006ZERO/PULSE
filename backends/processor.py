@@ -42,6 +42,8 @@ async def process_and_send():
     hr_win   = deque(maxlen=HR_WIN)
     mag_win  = deque(maxlen=MAG_WIN)
     prob_win = deque(maxlen=5)
+    previous_hr = None
+    previous_timestamp = None
     
     async with websockets.connect("ws://localhost:3000", ping_interval=None) as websocket:
         while True:
@@ -52,6 +54,19 @@ async def process_and_send():
             mag  = float(np.sqrt(ax**2 + ay**2 + az**2))
             spo2 = float(np.clip(99.0 - (heart_rate - 60) * 0.04 + np.random.normal(0, 0.3), 88, 100))
             rr   = estimate_resp_rate(mag_win)
+
+            pulse_ok = 35 <= heart_rate <= 230
+            motion_ok = bool(np.all(np.isfinite([ax, ay, az]))) and mag <= 16.0
+            timestamp_ok = previous_timestamp is None or timestamp_us > previous_timestamp
+            motion_artifact = mag > 4.0
+            hr_jump = previous_hr is not None and abs(heart_rate - previous_hr) > 35
+            quality = 100
+            if not pulse_ok: quality -= 70
+            if not motion_ok: quality -= 70
+            if not timestamp_ok: quality -= 40
+            if motion_artifact: quality -= 25
+            if hr_jump: quality -= 20
+            quality = int(np.clip(quality, 0, 100))
 
             hr_win.append(heart_rate)
             mag_win.append(mag)
@@ -76,9 +91,18 @@ async def process_and_send():
                 "movement_trend":  round(trend, 2),
                 "spo2":            round(spo2, 1),
                 "resp_rate":       round(rr, 1),
+                "signal_quality":  quality,
+                "sensor_health": {
+                    "pulse": "ok" if pulse_ok else "fault",
+                    "motion": "ok" if motion_ok else "fault",
+                    "timestamp": "ok" if timestamp_ok else "stale",
+                    "motion_artifact": motion_artifact,
+                },
             })
 
             await websocket.send(payload)
+            previous_hr = heart_rate
+            previous_timestamp = timestamp_us
             await asyncio.sleep(0.1)
 
 if __name__ == "__main__":
