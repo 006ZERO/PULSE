@@ -1,249 +1,197 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sport-Tech Dashboard</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PULSE — Performance Monitor</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;600&display=swap');
-  :root{--bg:#070a0f;--panel:#0d1117;--border:#1a2233;--accent:#00e5ff;--red:#ff3b3b;--green:#00ff88;--yellow:#ffd600;--dim:#3a4a5a;--text:#c8d8e8;}
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
-  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-  .wrapper{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:24px 20px;}
-  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-  .logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:var(--accent);text-shadow:0 0 20px rgba(0,229,255,0.4);}
-  .logo span{color:var(--text);}
-  .header-right{display:flex;align-items:center;gap:16px;}
-  .status-bar{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);}
-  .dot{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);}
-  .dot.live{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.5s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
-  .btn-report{background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:8px 16px;border-radius:4px;cursor:pointer;transition:all 0.2s;}
-  .btn-report:hover{background:var(--accent);color:var(--bg);}
-  .phase-bar{display:flex;gap:8px;margin-bottom:16px;}
-  .phase-step{flex:1;padding:10px 8px;border-radius:4px;border:1px solid var(--border);text-align:center;transition:all 0.4s;}
-  .phase-step .phase-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--dim);}
-  .phase-step .phase-desc{font-size:9px;letter-spacing:1px;color:var(--dim);margin-top:2px;}
-  .phase-step.active-warmup{border-color:#00ff88;background:rgba(0,255,136,0.08);}
-  .phase-step.active-warmup .phase-name{color:#00ff88;text-shadow:0 0 10px rgba(0,255,136,0.5);}
-  .phase-step.active-active{border-color:#00e5ff;background:rgba(0,229,255,0.08);}
-  .phase-step.active-active .phase-name{color:#00e5ff;text-shadow:0 0 10px rgba(0,229,255,0.5);}
-  .phase-step.active-tired{border-color:#ffd600;background:rgba(255,214,0,0.08);}
-  .phase-step.active-tired .phase-name{color:#ffd600;text-shadow:0 0 10px rgba(255,214,0,0.5);}
-  .phase-step.active-exhausted{border-color:#ff3b3b;background:rgba(255,59,59,0.08);animation:phase-flash 1s infinite;}
-  .phase-step.active-exhausted .phase-name{color:#ff3b3b;text-shadow:0 0 10px rgba(255,59,59,0.5);}
-  @keyframes phase-flash{0%,100%{opacity:1;}50%{opacity:0.6;}}
-  #fatigue-banner{display:none;background:rgba(255,59,59,0.1);border:1px solid var(--red);border-left:4px solid var(--red);padding:14px 20px;margin-bottom:16px;border-radius:4px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:4px;color:var(--red);text-shadow:0 0 12px rgba(255,59,59,0.5);animation:flash 0.8s infinite;}
-  @keyframes flash{0%,100%{opacity:1;}50%{opacity:0.6;}}
-  .metrics-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px 18px;position:relative;overflow:hidden;}
-  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:0.4;}
-  .card.hr::before{background:var(--red);}
-  .card.spo2::before{background:#a78bfa;}
-  .card.rr::before{background:#34d399;}
-  .card-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
-  .card-value{font-family:'Bebas Neue',sans-serif;font-size:44px;line-height:1;color:#fff;letter-spacing:2px;}
-  .card-unit{font-size:12px;color:var(--dim);margin-top:4px;letter-spacing:1px;}
-  .hr-value{color:var(--green);}
-  .hr-value.warn{color:var(--yellow);}
-  .hr-value.danger{color:var(--red);text-shadow:0 0 10px rgba(255,59,59,0.5);}
-  .spo2-value{color:#a78bfa;}
-  .spo2-value.warn{color:var(--yellow);}
-  .spo2-value.danger{color:var(--red);}
-  .rr-value{color:#34d399;}
-  .charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
-  .chart-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px 18px;}
-  .chart-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
-  canvas{display:block;width:100%!important;}
-  .footer-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  .stat-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;}
-  .stat-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);}
-  .stat-value{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);letter-spacing:2px;}
-  .ts-row{text-align:right;font-size:10px;color:var(--dim);letter-spacing:2px;margin-top:12px;}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{--bg:#111;--sidebar:#1a1a1a;--panel:#1d1d1d;--panel2:#202020;--line:#373737;--line2:#2a2a2a;--text:#f2f2f2;--muted:#969696;--orange:#4c8dff;--green:#55c3a3;--red:#ef5b4f;--yellow:#f5b84a}
+*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif;font-size:12px}button{font:inherit}
+.app{min-height:100vh;display:grid;grid-template-columns:190px minmax(0,1fr)}
+.sidebar{position:sticky;top:0;height:100vh;padding:20px 12px 16px;background:var(--sidebar);border-right:1px solid #202020;display:flex;flex-direction:column}
+.brand{font-size:18px;font-weight:800;letter-spacing:-.06em}.brand span{color:var(--orange)}.brand-sub{margin-top:7px;color:var(--muted);font-size:10px}
+.language-switch{display:flex;gap:3px;margin-top:16px}.lang-button{padding:5px 8px;border:1px solid var(--line);background:none;color:#777;cursor:pointer;font-size:8px;font-weight:800}.lang-button.active{border-color:var(--orange);background:#202838;color:var(--orange)}
+.nav{margin-top:30px;display:grid;gap:4px}.nav-item{width:100%;display:flex;align-items:center;gap:9px;padding:10px 10px;border:0;border-left:2px solid transparent;background:none;color:#b5b5b5;font-size:11px;font-weight:600;text-align:left;cursor:pointer}.nav-item:hover{background:#242424;color:var(--text)}.nav-item.active{border-color:var(--orange);background:#292725;color:var(--orange)}
+.nav-icon{width:13px;color:#777;text-align:center}.nav-item.active .nav-icon{color:var(--orange)}
+.device{margin-top:auto;padding-top:15px;border-top:1px solid var(--line)}.device-label{color:#777;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.device-name{margin-top:8px;font-size:11px;font-weight:600}.device-status{display:flex;align-items:center;gap:6px;margin-top:6px;color:var(--muted);font-size:10px}.last-packet{margin-top:5px;color:#666;font-size:8px}.dot{width:7px;height:7px;border-radius:50%;background:var(--red)}.dot.live{background:var(--green)}.dot.waiting{background:var(--yellow)}
+.sensor-list{margin-top:11px;border-top:1px solid var(--line2)}.sensor-line{display:flex;justify-content:space-between;align-items:center;padding-top:7px;color:#777;font-size:8px}.sensor-state{display:flex;align-items:center;gap:5px;color:var(--muted)}.sensor-state .dot{width:5px;height:5px}.quality-good{color:var(--green)}.quality-warn{color:var(--yellow)}.quality-fault{color:var(--red)}
+.main{padding:24px 28px 36px;min-width:0}.eyebrow{color:var(--orange);font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.page-head{display:flex;justify-content:space-between;align-items:end;margin-top:7px;margin-bottom:24px}.page-head h1{font-size:34px;line-height:1;font-weight:800;letter-spacing:-.055em}.page-head p{margin-top:8px;color:var(--muted);font-size:11px}.head-actions{display:flex;gap:8px}.button{border:1px solid var(--line);background:#191919;color:var(--text);padding:10px 13px;cursor:pointer;font-size:10px;font-weight:700}.button.primary{border-color:var(--orange);background:var(--orange);color:#171717}.button:hover{border-color:var(--orange)}.button:disabled{border-color:var(--line);background:#242424;color:#777;cursor:default}
+.overview{display:grid;grid-template-columns:repeat(5,1fr);border-top:2px solid var(--orange);background:var(--panel);border-left:1px solid var(--line);border-bottom:1px solid var(--line)}
+.metric{min-height:105px;padding:15px 16px;border-right:1px solid var(--line)}.metric-label{color:var(--muted);font-size:9px;font-weight:600}.metric-value{margin-top:21px;font-size:29px;font-weight:800;letter-spacing:-.055em;font-variant-numeric:tabular-nums}.metric-value small{margin-left:4px;color:#777;font-size:8px;font-weight:600;letter-spacing:0;text-transform:uppercase}.metric-value.warn{color:var(--yellow)}.metric-value.danger{color:var(--red)}
+.content{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(310px,.72fr);gap:16px;margin-top:16px}.panel{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--orange)}
+.panel-head{display:flex;justify-content:space-between;align-items:start;padding:14px 16px;border-bottom:1px solid var(--line)}.panel-kicker{color:var(--orange);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.panel-title{margin-top:7px;font-size:18px;font-weight:800;letter-spacing:-.03em}.panel-note{margin-top:5px;color:var(--muted);font-size:10px}.live-badge{padding:5px 7px;background:#202838;color:var(--orange);font-size:9px;font-weight:800;text-transform:uppercase}
+.chart-main{height:260px;padding:20px 16px 8px}canvas{display:block;width:100%!important;height:100%!important}
+.zones{display:grid;grid-template-columns:repeat(4,1fr);margin:0 16px 16px;border:1px solid var(--line)}.phase-step{padding:10px;border-right:1px solid var(--line);color:#777;font-size:8px;font-weight:700;text-transform:uppercase}.phase-step:last-child{border:0}.phase-desc{display:block;margin-top:4px;color:#5e5e5e;font-size:7px}.phase-step[class*='active-']{background:#2b2825;color:var(--orange)}.phase-step.active-exhausted{background:#38211f;color:var(--red)}
+.right-stack{display:grid;gap:16px;align-content:start}.fatigue{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--orange);padding:15px 16px}.fatigue-top{display:flex;justify-content:space-between;align-items:start}.fatigue-value{font-size:46px;font-weight:800;line-height:1;letter-spacing:-.06em}.fatigue-value span{font-size:12px;color:#777}.fatigue-track{height:3px;margin:18px 0 8px;background:#383838}.fatigue-track span{display:block;height:100%;width:0;background:var(--orange);transition:width .2s}.fatigue-scale{display:flex;justify-content:space-between;color:#696969;font-size:7px;text-transform:uppercase}
+#fatigue-banner{display:none;margin-top:12px;padding:9px 10px;border-left:2px solid var(--red);background:#2d1d1b;color:#ff8d84;font-size:9px;font-weight:700}
+.telemetry{background:var(--panel);border:1px solid var(--line)}.telemetry-title{padding:13px 15px;border-bottom:1px solid var(--line);font-size:10px;font-weight:700}.telemetry-row{display:grid;grid-template-columns:1fr auto;align-items:center;padding:13px 15px;border-bottom:1px solid var(--line2)}.telemetry-row:last-child{border:0}.telemetry-label{color:#aaa;font-size:9px}.telemetry-value{font-size:17px;font-weight:800;letter-spacing:-.04em}.telemetry-value small{margin-left:4px;color:#777;font-size:7px;text-transform:uppercase}
+.lower{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.mini{height:160px;padding:14px 15px}.session-row{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);margin-top:4px}.session-stat{padding:11px 15px;border-right:1px solid var(--line)}.session-stat:last-child{border:0}.stat-label{color:#777;font-size:7px;text-transform:uppercase}.stat-value{margin-top:5px;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.footer{display:flex;justify-content:space-between;margin-top:18px;color:#555;font-size:8px;text-transform:uppercase}.timestamp{color:#777}
+.modal-backdrop{position:fixed;inset:0;z-index:20;display:none;place-items:center;padding:20px;background:rgba(0,0,0,.76)}.modal-backdrop.open{display:grid}.modal{width:min(430px,100%);background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--orange);padding:22px}.modal-top{display:flex;justify-content:space-between;align-items:start}.modal-top .language-switch{margin-top:0}.modal h2{font-size:22px;letter-spacing:-.04em}.modal p{margin-top:8px;color:var(--muted);font-size:11px;line-height:1.6}.field-label{display:block;margin-top:22px;margin-bottom:7px;color:var(--muted);font-size:9px;font-weight:700;text-transform:uppercase}.field{width:100%;padding:12px;border:1px solid var(--line);outline:0;background:#141414;color:var(--text);font:600 12px Inter}.field:focus{border-color:var(--orange)}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.modal-error{min-height:14px;margin-top:6px;color:var(--red);font-size:9px}.session-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:var(--muted);font-size:10px}.session-chip strong{color:var(--text)}
+.view{display:none}.view.active{display:block}.profile-grid{display:grid;grid-template-columns:300px 1fr;gap:16px}.profile-card{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--orange);padding:18px}.profile-avatar{width:54px;height:54px;display:grid;place-items:center;background:var(--orange);color:#111;font-size:18px;font-weight:800}.profile-name{margin-top:18px;font-size:21px;font-weight:800}.profile-meta{margin-top:6px;color:var(--muted);font-size:9px}.profile-list{margin-top:20px;border-top:1px solid var(--line)}.profile-line{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line2);font-size:9px}.profile-line span:first-child{color:var(--muted)}.overview-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.overview-stat{min-height:135px;padding:17px;background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--orange)}.overview-stat strong{display:block;margin-top:26px;font-size:32px;letter-spacing:-.05em}.history-table{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--orange)}.history-head,.history-entry{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr .7fr;align-items:center;padding:13px 15px;border-bottom:1px solid var(--line)}.history-head{color:var(--muted);font-size:8px;font-weight:700;text-transform:uppercase}.history-entry{font-size:10px}.history-entry:last-child{border:0}.history-status{color:var(--green);font-weight:700}.empty-history{padding:35px 15px;text-align:center;color:var(--muted);font-size:10px}
+@media(max-width:1050px){.overview{grid-template-columns:repeat(3,1fr)}.metric:nth-child(n+4){border-top:1px solid var(--line)}.content{grid-template-columns:1fr}.right-stack{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto;padding:15px 16px;display:grid;grid-template-columns:1fr auto}.nav{grid-column:1/-1;display:flex;margin-top:14px;overflow-x:auto}.nav-item{white-space:nowrap}.device{margin:0;padding:0;border:0;text-align:right}.device-label,.device-name{display:none}.main{padding:20px 16px}.page-head{align-items:start}.page-head h1{font-size:28px}.page-head p{display:none}.overview{grid-template-columns:1fr 1fr}.metric:nth-child(n){border-top:0}.metric:nth-child(n+3){border-top:1px solid var(--line)}.metric{min-height:90px}.metric-value{font-size:24px}.content{grid-template-columns:1fr}.right-stack,.lower{grid-template-columns:1fr}.zones{grid-template-columns:1fr 1fr}.phase-step:nth-child(2){border-right:0}.phase-step:nth-child(n+3){border-top:1px solid var(--line)}.head-actions .button:first-child{display:none}.profile-grid{grid-template-columns:1fr}.history-head,.history-entry{grid-template-columns:1fr 1fr 1fr}.history-head span:nth-child(n+4),.history-entry span:nth-child(n+4){display:none}}
 </style>
 </head>
 <body>
-<div class="wrapper">
-  <header>
-    <div class="logo">SPORT<span>·</span>TECH <span style="font-size:14px;letter-spacing:2px;color:var(--dim)">/ PERFORMANCE MONITOR</span></div>
-    <div class="header-right">
-      <button class="btn-report" onclick="exportReport()">⬇ Export Report</button>
-      <div class="status-bar"><div class="dot" id="conn-dot"></div><span id="conn-label">CONNECTING...</span></div>
+<div class="app">
+  <aside class="sidebar">
+    <div><div class="brand">PUL<span>SE</span></div><div class="brand-sub">Athlete performance intelligence</div><div class="language-switch"><button class="lang-button active" data-lang="en" onclick="setLanguage('en')">EN</button><button class="lang-button" data-lang="de" onclick="setLanguage('de')">DE</button></div></div>
+    <nav class="nav">
+      <button class="nav-item active" data-view="live"><span class="nav-icon">●</span>Live session</button>
+      <button class="nav-item" data-view="athlete"><span class="nav-icon">⌁</span>Athlete overview</button>
+      <button class="nav-item" data-view="history"><span class="nav-icon">▦</span>Session history</button>
+    </nav>
+    <div class="device"><div class="device-label">Wearable core</div><div class="device-name">PULSE Node 01</div><div class="device-status"><span class="dot waiting" id="conn-dot"></span><span id="conn-label">Waiting for sensor</span></div><div class="last-packet" id="packet-age">No packets received</div><div class="sensor-list"><div class="sensor-line"><span>Pulse sensor</span><span class="sensor-state" id="pulse-health"><span class="dot waiting"></span>Waiting</span></div><div class="sensor-line"><span>Motion sensor</span><span class="sensor-state" id="motion-health"><span class="dot waiting"></span>Waiting</span></div><div class="sensor-line"><span>Signal quality</span><strong id="signal-quality">—</strong></div></div></div>
+  </aside>
+
+  <main class="main">
+   <section class="view active" id="view-live">
+    <div class="eyebrow">Live athlete intelligence</div>
+    <header class="page-head">
+      <div><h1>Performance monitor.</h1><p>Real-time workload and fatigue telemetry from the active wearable.</p><div class="session-chip">Athlete <strong id="active-athlete">Not selected</strong></div></div>
+      <div class="head-actions"><button class="button" onclick="exportReport()">Export report</button><button class="button" id="new-session" onclick="openSessionSetup()" style="display:none">Start new session</button><button class="button primary" id="end-session" onclick="requestEndSession()" disabled>End session</button></div>
+    </header>
+
+    <section class="overview">
+      <div class="metric"><div class="metric-label">Heart rate</div><div class="metric-value" id="hr-val">—<small>BPM</small></div></div>
+      <div class="metric"><div class="metric-label">Blood oxygen</div><div class="metric-value" id="spo2-val">—<small>SpO₂</small></div></div>
+      <div class="metric"><div class="metric-label">Respiratory rate</div><div class="metric-value" id="rr-val">—<small>BR/MIN</small></div></div>
+      <div class="metric"><div class="metric-label">Movement load</div><div class="metric-value" id="mag-val">—<small>G</small></div></div>
+      <div class="metric"><div class="metric-label">Session elapsed</div><div class="metric-value" id="session-time">0:00</div></div>
+    </section>
+
+    <div class="content">
+      <section class="panel">
+        <div class="panel-head"><div><div class="panel-kicker">Live signal</div><div class="panel-title">Heart rate activity</div><div class="panel-note">Streaming data · last 80 samples</div></div><div class="live-badge">● Live</div></div>
+        <div class="chart-main"><canvas id="hr-chart"></canvas></div>
+        <div class="zones">
+          <div class="phase-step" id="phase-warmup"><div class="phase-name">Warm up</div><div class="phase-desc">Below 120</div></div>
+          <div class="phase-step" id="phase-active"><div class="phase-name">Active</div><div class="phase-desc">120–149</div></div>
+          <div class="phase-step" id="phase-tired"><div class="phase-name">Tired</div><div class="phase-desc">150–169</div></div>
+          <div class="phase-step" id="phase-exhausted"><div class="phase-name">Exhausted</div><div class="phase-desc">170+</div></div>
+        </div>
+      </section>
+
+      <aside class="right-stack">
+        <section class="fatigue">
+          <div class="fatigue-top"><div><div class="panel-kicker">Risk analysis</div><div class="panel-title">Fatigue index</div></div><div class="fatigue-value"><span id="fatigue-score">—</span><span>/100</span></div></div>
+          <div class="fatigue-track"><span id="fatigue-bar"></span></div><div class="fatigue-scale"><span>Recovered</span><span>High risk</span></div>
+          <div id="fatigue-banner">Fatigue detected — recovery is recommended.</div>
+        </section>
+        <section class="telemetry">
+          <div class="telemetry-title">Session summary</div>
+          <div class="telemetry-row"><div class="telemetry-label">Peak heart rate</div><div class="telemetry-value" id="peak-hr">—<small>BPM</small></div></div>
+          <div class="telemetry-row"><div class="telemetry-label">Average heart rate</div><div class="telemetry-value" id="avg-hr">—<small>BPM</small></div></div>
+          <div class="telemetry-row"><div class="telemetry-label">Average blood oxygen</div><div class="telemetry-value" id="avg-spo2">—</div></div>
+          <div class="telemetry-row"><div class="telemetry-label">Fatigue events</div><div class="telemetry-value" id="fatigue-count">0</div></div>
+        </section>
+      </aside>
     </div>
-  </header>
 
-  <div class="phase-bar">
-    <div class="phase-step" id="phase-warmup"><div class="phase-name">WARM UP</div><div class="phase-desc">HR &lt; 120</div></div>
-    <div class="phase-step" id="phase-active"><div class="phase-name">ACTIVE</div><div class="phase-desc">HR 120–150</div></div>
-    <div class="phase-step" id="phase-tired"><div class="phase-name">TIRED</div><div class="phase-desc">HR 150–170</div></div>
-    <div class="phase-step" id="phase-exhausted"><div class="phase-name">EXHAUSTED</div><div class="phase-desc">HR &gt; 170</div></div>
-  </div>
-
-  <div id="fatigue-banner">⚠ FATIGUE DETECTED — ATHLETE NEEDS REST</div>
-
-  <div class="metrics-row">
-    <div class="card hr"><div class="card-label">Heart Rate</div><div class="card-value hr-value" id="hr-val">---</div><div class="card-unit">BPM</div></div>
-    <div class="card spo2"><div class="card-label">SpO₂</div><div class="card-value spo2-value" id="spo2-val">---</div><div class="card-unit">% OXYGEN</div></div>
-    <div class="card rr"><div class="card-label">Resp Rate</div><div class="card-value rr-value" id="rr-val">---</div><div class="card-unit">BR / MIN</div></div>
-    <div class="card"><div class="card-label">Fatigue Score</div><div class="card-value" id="fatigue-score" style="color:var(--green)">---</div><div class="card-unit">/ 100</div></div>
-    <div class="card"><div class="card-label">Accel Magnitude</div><div class="card-value" id="mag-val" style="color:var(--accent)">---</div><div class="card-unit">G</div></div>
-  </div>
-
-  <div class="charts-row">
-    <div class="chart-card"><div class="chart-title">Heart Rate — Live</div><canvas id="hr-chart" height="100"></canvas></div>
-    <div class="chart-card"><div class="chart-title">SpO₂ — Live</div><canvas id="spo2-chart" height="100"></canvas></div>
-    <div class="chart-card"><div class="chart-title">Fatigue Score — Live</div><canvas id="fatigue-chart" height="100"></canvas></div>
-  </div>
-
-  <div class="footer-row">
-    <div class="stat-card">
-      <div><div class="stat-label">Peak HR</div><div class="stat-value" id="peak-hr">---</div></div>
-      <div><div class="stat-label">Avg HR</div><div class="stat-value" id="avg-hr">---</div></div>
-      <div><div class="stat-label">Avg SpO₂</div><div class="stat-value" id="avg-spo2">---</div></div>
+    <div class="lower">
+      <section class="panel"><div class="panel-head"><div><div class="panel-kicker">Oxygen saturation</div><div class="panel-title">SpO₂ trend</div></div></div><div class="mini"><canvas id="spo2-chart"></canvas></div><div class="session-row"><div class="session-stat"><div class="stat-label">Target</div><div class="stat-value">96–100%</div></div><div class="session-stat"><div class="stat-label">Source</div><div class="stat-value">Optical</div></div><div class="session-stat"><div class="stat-label">Status</div><div class="stat-value">Live</div></div></div></section>
+      <section class="panel"><div class="panel-head"><div><div class="panel-kicker">Model output</div><div class="panel-title">Fatigue trend</div></div></div><div class="mini"><canvas id="fatigue-chart"></canvas></div><div class="session-row"><div class="session-stat"><div class="stat-label">Model</div><div class="stat-value">RF v1</div></div><div class="session-stat"><div class="stat-label">Threshold</div><div class="stat-value">60</div></div><div class="session-stat"><div class="stat-label">Inference</div><div class="stat-value">Edge</div></div></div></section>
     </div>
-    <div class="stat-card">
-      <div><div class="stat-label">Fatigue Events</div><div class="stat-value" id="fatigue-count" style="color:var(--red)">0</div></div>
-      <div><div class="stat-label">Session Time</div><div class="stat-value" id="session-time">0:00</div></div>
+    <footer class="footer"><span>PULSE athlete safety system</span><span class="timestamp">Last packet: <span id="ts-val">Waiting</span></span></footer>
+   </section>
+
+   <section class="view" id="view-athlete">
+    <div class="eyebrow">Athlete profile</div>
+    <header class="page-head"><div><h1>Athlete overview.</h1><p>Current performance baseline and live session totals.</p></div></header>
+    <div class="profile-grid">
+      <div class="profile-card"><div class="profile-avatar" id="athlete-initials">--</div><div class="profile-name" id="profile-athlete">No athlete selected</div><div class="profile-meta">PULSE Node 01 · Workshop roster</div><div class="profile-list"><div class="profile-line"><span>Profile</span><strong>Performance</strong></div><div class="profile-line"><span>Resting HR</span><strong>62 BPM</strong></div><div class="profile-line"><span>Target SpO₂</span><strong>96–100%</strong></div><div class="profile-line"><span>Fatigue threshold</span><strong>60 / 100</strong></div></div></div>
+      <div class="overview-stats"><div class="overview-stat"><div class="metric-label">Current heart rate</div><strong id="athlete-hr">— BPM</strong></div><div class="overview-stat"><div class="metric-label">Session average</div><strong id="athlete-avg">— BPM</strong></div><div class="overview-stat"><div class="metric-label">Current fatigue</div><strong id="athlete-fatigue">— / 100</strong></div><div class="overview-stat"><div class="metric-label">Session alerts</div><strong id="athlete-alerts">0</strong></div></div>
     </div>
-  </div>
-  <div class="ts-row">TIMESTAMP &nbsp;<span id="ts-val">—</span></div>
+   </section>
+
+   <section class="view" id="view-history">
+    <div class="eyebrow">Performance archive</div>
+    <header class="page-head"><div><h1>Session history.</h1><p>Completed and currently active athlete sessions.</p></div><div class="head-actions"><button class="button" onclick="exportReport()">Export current</button></div></header>
+    <div class="history-table"><div class="history-head"><span>Athlete / session</span><span>Date</span><span>Duration</span><span>Average HR</span><span>Peak HR</span><span>Status</span></div><div id="history-list"><div class="empty-history">No sessions recorded on this device.</div></div></div>
+   </section>
+  </main>
 </div>
+<div class="modal-backdrop open" id="session-modal"><div class="modal"><div class="modal-top"><div class="panel-kicker">New recording</div><div class="language-switch"><button class="lang-button active" data-lang="en" onclick="setLanguage('en')">EN</button><button class="lang-button" data-lang="de" onclick="setLanguage('de')">DE</button></div></div><h2>Start athlete session</h2><p>Name the participant before recording. Sensor telemetry can remain connected while you prepare.</p><label class="field-label" for="athlete-name">Athlete name</label><input class="field" id="athlete-name" maxlength="40" placeholder="e.g. Jordan Miller" autocomplete="off"><div class="modal-error" id="setup-error"></div><div class="modal-actions"><button class="button primary" onclick="startSession()">Start recording</button></div></div></div>
+<div class="modal-backdrop" id="confirm-modal"><div class="modal"><div class="panel-kicker">Confirm action</div><h2>End this session?</h2><p>The final readings will be preserved, the session will be added to history, and the PDF will remain available to export.</p><div class="modal-actions"><button class="button" onclick="closeEndConfirmation()">Keep recording</button><button class="button primary" onclick="endSession()">End and save</button></div></div></div>
 <script>
-function makeChart(id,color,min,max){
-  const canvas=document.getElementById(id),ctx=canvas.getContext('2d');
-  const W=400,H=100; canvas.width=W; canvas.height=H;
-  const pts=new Array(80).fill((min+max)/2);
-  return{push(v){pts.push(v);if(pts.length>80)pts.shift();this.draw();},draw(){
-    ctx.clearRect(0,0,W,H);
-    ctx.strokeStyle='rgba(26,34,51,0.8)';ctx.lineWidth=1;
-    for(let i=0;i<=4;i++){const y=(i/4)*H;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    const grad=ctx.createLinearGradient(0,0,0,H);
-    grad.addColorStop(0,color+'33');grad.addColorStop(1,color+'00');
-    const sx=W/(pts.length-1);
-    ctx.beginPath();pts.forEach((v,i)=>{const x=i*sx,y=H-((v-min)/(max-min))*H*0.85-H*0.07;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-    ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
-    ctx.beginPath();pts.forEach((v,i)=>{const x=i*sx,y=H-((v-min)/(max-min))*H*0.85-H*0.07;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-    ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.shadowColor=color;ctx.shadowBlur=6;ctx.stroke();ctx.shadowBlur=0;
-  }};
-}
-const hrChart     = makeChart('hr-chart',      '#ff3b3b', 40,  220);
-const spo2Chart   = makeChart('spo2-chart',    '#a78bfa', 88,  100);
-const fatigueChart= makeChart('fatigue-chart', '#ffd600', 0,   100);
-
-function updatePhase(hr){
-  ['warmup','active','tired','exhausted'].forEach(p=>document.getElementById('phase-'+p).className='phase-step');
-  const p=hr<120?'warmup':hr<150?'active':hr<170?'tired':'exhausted';
-  document.getElementById('phase-'+p).className='phase-step active-'+p;
-}
-
-let peakHR=0,hrSum=0,spo2Sum=0,hrCount=0,fatigueEvents=0,sessionStart=Date.now();
-const sessionLog=[];
-
-setInterval(()=>{
-  const s=Math.floor((Date.now()-sessionStart)/1000);
-  document.getElementById('session-time').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
-},1000);
-
-function update(d){
-  const hr=d.heart_rate,ax=d.accel_x,ay=d.accel_y,az=d.accel_z;
-  const mag=Math.sqrt(ax*ax+ay*ay+az*az);
-  const score=d.fatigue_score??0;
-  const spo2=d.spo2??98;
-  const rr=d.resp_rate??16;
-
-  const hrEl=document.getElementById('hr-val');
-  hrEl.textContent=hr; hrEl.className='card-value hr-value'+(hr>160?' danger':hr>140?' warn':'');
-  const spo2El=document.getElementById('spo2-val');
-  spo2El.textContent=spo2.toFixed(1);
-  spo2El.className='card-value spo2-value'+(spo2<94?' danger':spo2<96?' warn':'');
-  document.getElementById('rr-val').textContent=Math.round(rr);
-  document.getElementById('mag-val').textContent=mag.toFixed(2);
-  const fs=document.getElementById('fatigue-score');
-  fs.textContent=score; fs.style.color=score>60?'var(--red)':score>30?'var(--yellow)':'var(--green)';
-  document.getElementById('fatigue-banner').style.display=d.fatigue_warning?'block':'none';
-
-  hrChart.push(hr); spo2Chart.push(spo2); fatigueChart.push(score);
-  updatePhase(hr);
-
-  peakHR=Math.max(peakHR,hr); hrSum+=hr; spo2Sum+=spo2; hrCount++;
-  if(d.fatigue_warning) fatigueEvents++;
-  document.getElementById('peak-hr').textContent=peakHR;
-  document.getElementById('avg-hr').textContent=Math.round(hrSum/hrCount);
-  document.getElementById('avg-spo2').textContent=(spo2Sum/hrCount).toFixed(1)+'%';
-  document.getElementById('fatigue-count').textContent=fatigueEvents;
-  document.getElementById('ts-val').textContent=d.timestamp_us?d.timestamp_us.toLocaleString():'—';
-
-  if(hrCount%10===0){
-    const elapsed=Math.floor((Date.now()-sessionStart)/1000);
-    sessionLog.push({t:elapsed,hr,spo2,rr:Math.round(rr),mag:+mag.toFixed(2),score,fatigue:d.fatigue_warning});
-  }
-}
-
+const translations={
+  'Athlete performance intelligence':'Athleten-Performance-Intelligenz','Live session':'Live-Sitzung','Athlete overview':'Athletenübersicht','Session history':'Sitzungsverlauf','Wearable core':'Wearable-System','Waiting for sensor':'Warte auf Sensor','No packets received':'Keine Datenpakete empfangen',
+  'Live athlete intelligence':'Live-Athletenanalyse','Performance monitor.':'Leistungsmonitor.','Real-time workload and fatigue telemetry from the active wearable.':'Echtzeitdaten zu Belastung und Ermüdung vom aktiven Wearable.','Athlete':'Athlet','Not selected':'Nicht ausgewählt','Export report':'Bericht exportieren','Start new session':'Neue Sitzung starten','End session':'Sitzung beenden',
+  'Heart rate':'Herzfrequenz','Blood oxygen':'Blutsauerstoff','Respiratory rate':'Atemfrequenz','Movement load':'Bewegungsbelastung','Session elapsed':'Sitzungsdauer','Live signal':'Live-Signal','Heart rate activity':'Herzfrequenzverlauf','Streaming data · last 80 samples':'Datenstream · letzte 80 Messwerte','● Live':'● Live',
+  'Warm up':'Aufwärmen','Active':'Aktiv','Tired':'Ermüdet','Exhausted':'Erschöpft','Below 120':'Unter 120','Risk analysis':'Risikoanalyse','Fatigue index':'Ermüdungsindex','Recovered':'Erholt','High risk':'Hohes Risiko','Fatigue detected — recovery is recommended.':'Ermüdung erkannt — Erholung wird empfohlen.','Session summary':'Sitzungsübersicht','Peak heart rate':'Maximale Herzfrequenz','Average heart rate':'Durchschnittliche Herzfrequenz','Average blood oxygen':'Durchschnittlicher Blutsauerstoff','Fatigue events':'Ermüdungsereignisse',
+  'Oxygen saturation':'Sauerstoffsättigung','SpO₂ trend':'SpO₂-Verlauf','Target':'Zielbereich','Source':'Quelle','Status':'Status','Optical':'Optisch','Model output':'Modellausgabe','Fatigue trend':'Ermüdungsverlauf','Model':'Modell','Threshold':'Schwellenwert','Inference':'Auswertung','Edge':'Lokal','PULSE athlete safety system':'PULSE Athletensicherheitssystem','Last packet:':'Letztes Datenpaket:',
+  'Athlete profile':'Athletenprofil','Athlete overview.':'Athletenübersicht.','Current performance baseline and live session totals.':'Aktuelle Leistungsbasis und Live-Sitzungswerte.','No athlete selected':'Kein Athlet ausgewählt','Workshop roster':'Workshop-Teilnehmer','Profile':'Profil','Performance':'Leistung','Resting HR':'Ruhepuls','Target SpO₂':'Ziel-SpO₂','Fatigue threshold':'Ermüdungsschwelle','Current heart rate':'Aktuelle Herzfrequenz','Session average':'Sitzungsdurchschnitt','Current fatigue':'Aktuelle Ermüdung','Session alerts':'Sitzungswarnungen',
+  'Performance archive':'Leistungsarchiv','Session history.':'Sitzungsverlauf.','Completed and currently active athlete sessions.':'Abgeschlossene und aktuell aktive Athletensitzungen.','Export current':'Aktuelle Sitzung exportieren','Athlete / session':'Athlet / Sitzung','Date':'Datum','Duration':'Dauer','Average HR':'Durchschnittspuls','Peak HR':'Maximalpuls','No sessions recorded on this device.':'Auf diesem Gerät wurden keine Sitzungen gespeichert.','Completed':'Abgeschlossen',
+  'New recording':'Neue Aufzeichnung','Start athlete session':'Athletensitzung starten','Name the participant before recording. Sensor telemetry can remain connected while you prepare.':'Benennen Sie den Teilnehmer vor der Aufzeichnung. Die Sensorverbindung kann während der Vorbereitung aktiv bleiben.','Athlete name':'Name des Athleten','Start recording':'Aufzeichnung starten','Confirm action':'Aktion bestätigen','End this session?':'Diese Sitzung beenden?','The final readings will be preserved, the session will be added to history, and the PDF will remain available to export.':'Die finalen Messwerte werden gespeichert, die Sitzung wird zum Verlauf hinzugefügt und der PDF-Export bleibt verfügbar.','Keep recording':'Aufzeichnung fortsetzen','End and save':'Beenden und speichern',
+  'Sensor stream live':'Sensorstream aktiv','Sensor stream unavailable':'Sensorstream nicht verfügbar','Checking sensor':'Sensor wird geprüft','Dashboard server offline':'Dashboard-Server offline','Reconnecting':'Verbindung wird wiederhergestellt','Session ended':'Sitzung beendet','Recording stopped':'Aufzeichnung beendet','Just now':'Gerade eben','Waiting':'Warten','Pulse sensor':'Pulssensor','Motion sensor':'Bewegungssensor','Signal quality':'Signalqualität','Good':'Gut','Limited':'Eingeschränkt','Fault':'Fehler'
+};
+let currentLanguage=localStorage.getItem('pulse_language')||'en';
+function tr(text){return currentLanguage==='de'?(translations[text]||text):text}
+function translatePage(){const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(['SCRIPT','STYLE'].includes(node.parentElement?.tagName))continue;if(!node._pulseEnglish){const value=node.nodeValue.trim();if(translations[value])node._pulseEnglish=value}if(node._pulseEnglish){const leading=node.nodeValue.match(/^\s*/)?.[0]||'',trailing=node.nodeValue.match(/\s*$/)?.[0]||'';node.nodeValue=leading+tr(node._pulseEnglish)+trailing}}document.getElementById('athlete-name').placeholder=currentLanguage==='de'?'z. B. Jordan Müller':'e.g. Jordan Miller';document.querySelectorAll('.lang-button').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLanguage));document.documentElement.lang=currentLanguage}
+function setLanguage(lang){currentLanguage=lang;localStorage.setItem('pulse_language',lang);translatePage();renderHistory();updatePacketAge()}
+function makeChart(id,color,min,max){const canvas=document.getElementById(id),ctx=canvas.getContext('2d'),points=new Array(80).fill((min+max)/2);function size(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=r.width*d;canvas.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);return{w:r.width,h:r.height}}return{reset(){points.fill((min+max)/2);this.draw()},push(v){points.push(v);if(points.length>80)points.shift();this.draw()},draw(){const{w,h}=size();ctx.clearRect(0,0,w,h);ctx.strokeStyle='#303030';ctx.lineWidth=1;[0,.5,1].forEach(n=>{ctx.beginPath();ctx.moveTo(0,n*h+.5);ctx.lineTo(w,n*h+.5);ctx.stroke()});ctx.beginPath();points.forEach((v,i)=>{const x=i*w/(points.length-1),y=h-8-((v-min)/(max-min))*(h-16);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke()}}}
+const hrChart=makeChart('hr-chart','#4c8dff',40,220),spo2Chart=makeChart('spo2-chart','#55c3a3',88,100),fatigueChart=makeChart('fatigue-chart','#4c8dff',0,100);requestAnimationFrame(()=>{hrChart.draw();spo2Chart.draw();fatigueChart.draw()});window.addEventListener('resize',()=>{hrChart.draw();spo2Chart.draw();fatigueChart.draw()});
+function updatePhase(hr){['warmup','active','tired','exhausted'].forEach(p=>document.getElementById('phase-'+p).className='phase-step');const p=hr<120?'warmup':hr<150?'active':hr<170?'tired':'exhausted';document.getElementById('phase-'+p).className='phase-step active-'+p}
+let peakHR=0,hrSum=0,spo2Sum=0,hrCount=0,fatigueEvents=0,wasFatigued=false,sessionActive=false,sessionEnded=false,sessionStart=Date.now(),sessionTimer=null,athleteName='',lastPacketAt=0;const sessionLog=[];
+const HISTORY_KEY='pulse_sessions_v1';let savedSessions=[];try{savedSessions=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]')}catch{savedSessions=[]}
+async function loadSessions(){try{const response=await fetch('/api/sessions');if(!response.ok)throw new Error('history unavailable');savedSessions=await response.json();localStorage.setItem(HISTORY_KEY,JSON.stringify(savedSessions));renderHistory()}catch{renderHistory()}}
+async function saveSession(session){try{const response=await fetch('/api/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(session)});if(!response.ok)throw new Error('save failed');return await response.json()}catch{return session}}
+function metric(id,value,unit,cls=''){const el=document.getElementById(id);el.innerHTML=`${value}${unit?`<small>${unit}</small>`:''}`;el.className='metric-value'+cls}
+function setSensorState(id,state){const el=document.getElementById(id),ok=state==='ok';el.innerHTML=`<span class="dot ${ok?'live':''}"></span>${tr(ok?'Good':'Fault')}`;el.className=`sensor-state ${ok?'quality-good':'quality-fault'}`}
+function updateSensorHealth(d,hr,mag){const health=d.sensor_health||{pulse:hr>=35&&hr<=230?'ok':'fault',motion:Number.isFinite(mag)&&mag<=16?'ok':'fault',motion_artifact:mag>4};let quality=Number.isFinite(d.signal_quality)?d.signal_quality:100-(health.pulse==='ok'?0:70)-(health.motion==='ok'?0:70)-(health.motion_artifact?25:0);quality=Math.max(0,Math.min(100,Math.round(quality)));setSensorState('pulse-health',health.pulse);setSensorState('motion-health',health.motion);const el=document.getElementById('signal-quality');el.textContent=`${quality}%`;el.className=quality>=80?'quality-good':quality>=50?'quality-warn':'quality-fault'}
+function update(d){const hr=Number(d.heart_rate)||0,ax=Number(d.accel_x)||0,ay=Number(d.accel_y)||0,az=Number(d.accel_z)||0,mag=Math.sqrt(ax*ax+ay*ay+az*az);updateSensorHealth(d,hr,mag);if(!sessionActive)return;const score=Number(d.fatigue_score??0),spo2=Number(d.spo2??98),rr=Number(d.resp_rate??16);metric('hr-val',Math.round(hr),'BPM',hr>160?' danger':hr>140?' warn':'');metric('spo2-val',spo2.toFixed(1),'SpO₂',spo2<94?' danger':spo2<96?' warn':'');metric('rr-val',Math.round(rr),'BR/MIN');metric('mag-val',mag.toFixed(2),'G');document.getElementById('fatigue-score').textContent=Math.round(score);document.getElementById('fatigue-bar').style.width=Math.max(0,Math.min(score,100))+'%';document.getElementById('fatigue-banner').style.display=d.fatigue_warning?'block':'none';hrChart.push(hr);spo2Chart.push(spo2);fatigueChart.push(score);updatePhase(hr);peakHR=Math.max(peakHR,hr);hrSum+=hr;spo2Sum+=spo2;hrCount++;if(d.fatigue_warning&&!wasFatigued)fatigueEvents++;wasFatigued=!!d.fatigue_warning;const average=Math.round(hrSum/hrCount);document.getElementById('peak-hr').innerHTML=`${Math.round(peakHR)}<small>BPM</small>`;document.getElementById('avg-hr').innerHTML=`${average}<small>BPM</small>`;document.getElementById('avg-spo2').textContent=(spo2Sum/hrCount).toFixed(1)+'%';document.getElementById('fatigue-count').textContent=fatigueEvents;document.getElementById('ts-val').textContent=tr('Just now');document.getElementById('athlete-hr').textContent=`${Math.round(hr)} BPM`;document.getElementById('athlete-avg').textContent=`${average} BPM`;document.getElementById('athlete-fatigue').textContent=`${Math.round(score)} / 100`;document.getElementById('athlete-alerts').textContent=fatigueEvents;if(hrCount%10===0)sessionLog.push({t:Math.floor((Date.now()-sessionStart)/1000),hr,spo2,rr:Math.round(rr),mag:+mag.toFixed(2),score,fatigue:d.fatigue_warning})}
 function exportReport(){
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF();
-  const now=new Date().toLocaleString();
-  const duration=Math.floor((Date.now()-sessionStart)/1000);
-  const mins=Math.floor(duration/60),secs=duration%60;
-
-  doc.setFillColor(7,10,15);doc.rect(0,0,210,40,'F');
-  doc.setTextColor(0,229,255);doc.setFontSize(22);doc.setFont('helvetica','bold');
-  doc.text('SPORT-TECH',14,18);
-  doc.setFontSize(10);doc.setTextColor(150,170,190);
-  doc.text('ATHLETE PERFORMANCE REPORT',14,26);
-  doc.setTextColor(100,120,140);doc.text(`Generated: ${now}`,14,34);
-
-  doc.setFillColor(13,17,23);doc.setDrawColor(26,34,51);
-  doc.roundedRect(14,48,182,55,3,3,'FD');
-  doc.setTextColor(0,229,255);doc.setFontSize(9);doc.text('SESSION SUMMARY',20,58);
-  doc.setTextColor(200,216,232);doc.setFontSize(11);doc.setFont('helvetica','bold');
-  doc.text(`${mins}:${String(secs).padStart(2,'0')}`,20,70);
-  doc.text(`${peakHR} BPM`,60,70);
-  doc.text(`${Math.round(hrSum/Math.max(hrCount,1))} BPM`,100,70);
-  doc.text(`${(spo2Sum/Math.max(hrCount,1)).toFixed(1)}%`,140,70);
-  doc.text(`${fatigueEvents}`,175,70);
-  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100,120,140);
-  doc.text('Duration',20,78);doc.text('Peak HR',60,78);
-  doc.text('Avg HR',100,78);doc.text('Avg SpO2',140,78);doc.text('Fatigue Events',165,78);
-
-  const fatigued=fatigueEvents>0;
-  doc.setFillColor(fatigued?255:0,fatigued?59:255,fatigued?59:136);
-  doc.roundedRect(20,86,80,8,2,2,'F');
-  doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');
-  doc.text(fatigued?'FATIGUE DETECTED':'NO FATIGUE DETECTED',24,91.5);
-
-  doc.setTextColor(0,229,255);doc.setFontSize(9);doc.text('SESSION LOG',14,116);
-  const headers=['Time','HR','SpO2','RR','Mag','Score','Status'];
-  const colX=[14,34,60,86,110,132,158];
-  doc.setFontSize(7);doc.setTextColor(100,120,140);
-  headers.forEach((h,i)=>doc.text(h,colX[i],123));
-  doc.setDrawColor(26,34,51);doc.line(14,125,196,125);
-  sessionLog.slice(-18).forEach((r,i)=>{
-    const y=130+i*6;
-    doc.setTextColor(r.fatigue?255:200,r.fatigue?59:216,r.fatigue?59:232);
-    doc.text(String(r.t),colX[0],y);doc.text(String(r.hr),colX[1],y);
-    doc.text(String(r.spo2),colX[2],y);doc.text(String(r.rr),colX[3],y);
-    doc.text(String(r.mag),colX[4],y);doc.text(String(r.score),colX[5],y);
-    doc.text(r.fatigue?'FATIGUE':'OK',colX[6],y);
-  });
-
-  doc.setFillColor(7,10,15);doc.rect(0,285,210,15,'F');
-  doc.setTextColor(60,74,90);doc.setFontSize(7);
-  doc.text('Sport-Tech Hackathon 2026 — Intelligent Wearable Performance System',14,292);
-  doc.save(`sport_tech_report_${Date.now()}.pdf`);
+  const{jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'}),duration=Math.floor((Date.now()-sessionStart)/1000);
+  const avgHR=Math.round(hrSum/Math.max(hrCount,1)),avgSpO2=(spo2Sum/Math.max(hrCount,1)).toFixed(1),currentScore=Number(document.getElementById('fatigue-score').textContent)||0;
+  const fmt=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`,orange=[76,141,255],ink=[25,25,25],muted=[105,105,105],line=[218,218,218];
+  const zones={Warmup:0,Active:0,Tired:0,Limit:0};sessionLog.forEach(r=>{zones[r.hr<120?'Warmup':r.hr<150?'Active':r.hr<170?'Tired':'Limit']++});
+  const assessment=currentScore>=70?'High fatigue risk detected. End high-intensity work and begin a monitored recovery period.':currentScore>=45?'Moderate fatigue load. Reduce intensity and reassess recovery markers before the next interval.':'Workload is currently within the expected range. Continue monitoring trend changes.';
+  function header(page,label){doc.setFillColor(...ink);doc.rect(0,0,210,29,'F');doc.setTextColor(...orange);doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('PULSE',14,13);doc.setTextColor(225,225,225);doc.setFontSize(7);doc.text(label.toUpperCase(),14,21);doc.setTextColor(145,145,145);doc.text(`SESSION 001  /  ${new Date().toLocaleDateString()}  /  PAGE ${page}`,196,17,{align:'right'})}
+  function footer(page){doc.setDrawColor(...line);doc.line(14,284,196,284);doc.setTextColor(...muted);doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.text('PULSE ATHLETE SAFETY SYSTEM  /  PULSE NODE 01  /  RF MODEL V1',14,290);doc.text(`Generated ${new Date().toLocaleString()}  /  ${page}`,196,290,{align:'right'})}
+  function label(text,x,y){doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(...muted);doc.text(text.toUpperCase(),x,y)}
+  function metricBox(x,y,w,title,value,unit,color=ink){doc.setFillColor(247,247,247);doc.setDrawColor(...line);doc.roundedRect(x,y,w,27,1.5,1.5,'FD');label(title,x+5,y+7);doc.setTextColor(...color);doc.setFont('helvetica','bold');doc.setFontSize(17);doc.text(String(value),x+5,y+20);doc.setFontSize(6);doc.setTextColor(...muted);doc.text(unit,x+w-5,y+20,{align:'right'})}
+  function sectionTitle(kicker,title,y){doc.setDrawColor(...orange);doc.setLineWidth(.7);doc.line(14,y,196,y);doc.setTextColor(...orange);doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.text(kicker.toUpperCase(),14,y+7);doc.setTextColor(...ink);doc.setFontSize(12);doc.text(title,14,y+14)}
+  header(1,'Athlete performance report');
+  label('Athlete',14,39);label('Device',62,39);label('Session started',110,39);label('Duration',161,39);
+  doc.setTextColor(...ink);doc.setFontSize(9);doc.setFont('helvetica','bold');doc.text(athleteName||'Unnamed athlete',14,46);doc.text('PULSE Node 01',62,46);doc.text(new Date(sessionStart).toLocaleString(),110,46);doc.text(fmt(duration),161,46);
+  metricBox(14,55,34,'Peak heart rate',Math.round(peakHR),'BPM');metricBox(51,55,34,'Average HR',avgHR,'BPM');metricBox(88,55,34,'Average SpO2',avgSpO2,'%');metricBox(125,55,34,'Fatigue index',currentScore,'/ 100',currentScore>=60?[216,62,47]:orange);metricBox(162,55,34,'Fatigue alerts',fatigueEvents,'EVENTS');
+  sectionTitle('Session intelligence','Performance assessment',91);
+  doc.setFillColor(currentScore>=60?255:251,currentScore>=60?241:246,currentScore>=60?239:235);doc.setDrawColor(currentScore>=60?239:210,currentScore>=60?91:225,currentScore>=60?79:190);doc.roundedRect(14,109,182,24,1.5,1.5,'FD');doc.setTextColor(...ink);doc.setFont('helvetica','bold');doc.setFontSize(8);doc.text(currentScore>=60?'RECOVERY ACTION REQUIRED':'SESSION STATUS',20,117);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text(doc.splitTextToSize(assessment,168),20,124);
+  sectionTitle('Trend review','Live signal charts',142);
+  label('Heart rate / BPM',14,163);doc.addImage(document.getElementById('hr-chart').toDataURL('image/png'),'PNG',14,167,182,30);
+  label('Blood oxygen / SpO2',14,204);doc.addImage(document.getElementById('spo2-chart').toDataURL('image/png'),'PNG',14,208,86,25);
+  label('Fatigue index / 100',110,204);doc.addImage(document.getElementById('fatigue-chart').toDataURL('image/png'),'PNG',110,208,86,25);
+  label('Effort zone distribution',14,243);const total=Math.max(sessionLog.length,1),zoneColors=[[85,195,163],orange,[245,184,74],[216,62,47]];let zx=14;Object.entries(zones).forEach(([name,count],i)=>{const w=182*(count/total);if(w>0){doc.setFillColor(...zoneColors[i]);doc.rect(zx,248,w,5,'F');zx+=w}});doc.setTextColor(...muted);doc.setFontSize(6.5);Object.entries(zones).forEach(([name,count],i)=>doc.text(`${name} ${Math.round(count/total*100)}%`,14+i*45.5,260));
+  footer(1);
+  doc.addPage();header(2,'Telemetry and fatigue events');
+  sectionTitle('Session data','Recorded telemetry',38);
+  const cols=[14,39,61,83,105,128,151,178],heads=['TIME','HR','SPO2','RESP','LOAD','FATIGUE','STATUS'];doc.setFillColor(238,238,238);doc.rect(14,56,182,9,'F');doc.setTextColor(...muted);doc.setFont('helvetica','bold');doc.setFontSize(6.5);heads.forEach((h,i)=>doc.text(h,cols[i]+2,62));
+  const rows=sessionLog.slice(-32);rows.forEach((r,i)=>{const y=65+i*6.2;if(i%2===1){doc.setFillColor(248,248,248);doc.rect(14,y,182,6.2,'F')}doc.setTextColor(...(r.fatigue?[190,55,44]:ink));doc.setFont('helvetica',r.fatigue?'bold':'normal');doc.setFontSize(6.8);[fmt(r.t),Math.round(r.hr),Number(r.spo2).toFixed(1),r.rr,r.mag,Math.round(r.score),r.fatigue?'RISK':'NORMAL'].forEach((v,j)=>doc.text(String(v),cols[j]+2,y+4.2))});
+  const tableEnd=65+rows.length*6.2;doc.setDrawColor(...line);doc.rect(14,56,182,Math.max(9,tableEnd-56));
+  if(rows.length<26){const risks=rows.filter(r=>r.fatigue);const sy=Math.max(tableEnd+12,235);label('Fatigue event summary',14,sy);doc.setTextColor(...ink);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.text(risks.length?`${risks.length} recorded risk samples. Highest recorded fatigue score: ${Math.max(...risks.map(r=>r.score))}/100.`:'No fatigue risk samples were recorded in the exported interval.',14,sy+8)}
+  footer(2);
+  doc.save(`pulse_session_report_${Date.now()}.pdf`)
 }
-
-function connect(){
-  const dot=document.getElementById('conn-dot'),label=document.getElementById('conn-label');
-  const ws=new WebSocket('ws://'+location.host);
-  ws.onopen=()=>{dot.classList.add('live');label.textContent='LIVE';};
-  ws.onmessage=e=>{try{update(JSON.parse(e.data));}catch{}};
-  ws.onclose=()=>{dot.classList.remove('live');label.textContent='RECONNECTING...';setTimeout(connect,2000);};
-  ws.onerror=()=>ws.close();
-}
-connect();
+function formatDuration(seconds){return`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`}
+function formatSessionDate(value){const date=new Date(value);return Number.isNaN(date.getTime())?value:date.toLocaleDateString(currentLanguage==='de'?'de-DE':'en-US')}
+function escapeHTML(value){return String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function renderHistory(){const list=document.getElementById('history-list'),rows=[];if(sessionActive)rows.push({athlete:athleteName,date:new Date(sessionStart).toISOString(),duration:formatDuration(Math.floor((Date.now()-sessionStart)/1000)),avg:hrCount?Math.round(hrSum/hrCount):null,peak:peakHR?Math.round(peakHR):null,status:'Live'});rows.push(...savedSessions);if(!rows.length){list.innerHTML=`<div class="empty-history">${tr('No sessions recorded on this device.')}</div>`;return}list.innerHTML=rows.map((s,i)=>{const avg=Number.isFinite(s.avg)?s.avg:'—',peak=Number.isFinite(s.peak)?s.peak:'—';return`<div class="history-entry"><span><strong>${escapeHTML(s.athlete)}</strong><br><small>${currentLanguage==='de'?'Sitzung':'Session'} ${String(rows.length-i).padStart(3,'0')}</small></span><span>${escapeHTML(formatSessionDate(s.date))}</span><span>${escapeHTML(s.duration)}</span><span>${avg}${avg==='—'?'':' BPM'}</span><span>${peak}${peak==='—'?'':' BPM'}</span><span class="history-status" style="color:${s.status==='Live'?'var(--green)':'var(--muted)'}">${tr(s.status)}</span></div>`}).join('')}
+function resetSessionDisplay(){peakHR=0;hrSum=0;spo2Sum=0;hrCount=0;fatigueEvents=0;wasFatigued=false;sessionLog.length=0;['hr-val','spo2-val','rr-val','mag-val'].forEach(id=>metric(id,'—',id==='hr-val'?'BPM':id==='spo2-val'?'SpO₂':id==='rr-val'?'BR/MIN':'G'));document.getElementById('session-time').textContent='0:00';document.getElementById('fatigue-score').textContent='—';document.getElementById('fatigue-bar').style.width='0';document.getElementById('peak-hr').innerHTML='—<small>BPM</small>';document.getElementById('avg-hr').innerHTML='—<small>BPM</small>';document.getElementById('avg-spo2').textContent='—';document.getElementById('fatigue-count').textContent='0';document.getElementById('athlete-hr').textContent='— BPM';document.getElementById('athlete-avg').textContent='— BPM';document.getElementById('athlete-fatigue').textContent='— / 100';document.getElementById('athlete-alerts').textContent='0';document.getElementById('fatigue-banner').style.display='none';hrChart.reset();spo2Chart.reset();fatigueChart.reset()}
+function openSessionSetup(){document.getElementById('session-modal').classList.add('open');document.getElementById('athlete-name').value=athleteName;document.getElementById('setup-error').textContent='';setTimeout(()=>document.getElementById('athlete-name').focus(),50)}
+function startSession(){const name=document.getElementById('athlete-name').value.trim();if(!name){document.getElementById('setup-error').textContent=currentLanguage==='de'?'Geben Sie einen Athletennamen ein.':'Enter an athlete name to start recording.';return}athleteName=name;resetSessionDisplay();sessionStart=Date.now();sessionActive=true;sessionEnded=false;document.getElementById('session-modal').classList.remove('open');document.getElementById('active-athlete').textContent=name;document.getElementById('profile-athlete').textContent=name;document.getElementById('athlete-initials').textContent=name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();document.getElementById('end-session').textContent=tr('End session');document.getElementById('end-session').disabled=false;document.getElementById('new-session').style.display='none';document.querySelector('.live-badge').textContent='● Live';clearInterval(sessionTimer);sessionTimer=setInterval(()=>{const value=formatDuration(Math.floor((Date.now()-sessionStart)/1000));document.getElementById('session-time').textContent=value;renderHistory()},1000);renderHistory();showView('live')}
+function requestEndSession(){if(sessionActive)document.getElementById('confirm-modal').classList.add('open')}
+function closeEndConfirmation(){document.getElementById('confirm-modal').classList.remove('open')}
+async function endSession(){if(!sessionActive)return;sessionActive=false;sessionEnded=true;clearInterval(sessionTimer);sessionTimer=null;closeEndConfirmation();const duration=Math.floor((Date.now()-sessionStart)/1000),record={athlete:athleteName,date:new Date(sessionStart).toISOString(),duration:formatDuration(duration),avg:hrCount?Math.round(hrSum/hrCount):null,peak:peakHR?Math.round(peakHR):null,status:'Completed',alerts:fatigueEvents};const saved=await saveSession(record);savedSessions.unshift(saved);savedSessions=savedSessions.slice(0,100);localStorage.setItem(HISTORY_KEY,JSON.stringify(savedSessions));document.getElementById('end-session').textContent=tr('Session ended');document.getElementById('end-session').disabled=true;document.getElementById('new-session').style.display='inline-block';document.getElementById('ts-val').textContent=tr('Recording stopped');document.querySelector('.live-badge').textContent=tr('Completed');renderHistory()}
+function showView(name){document.querySelectorAll('.view').forEach(view=>view.classList.toggle('active',view.id===`view-${name}`));document.querySelectorAll('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.view===name));if(name==='live')requestAnimationFrame(()=>{hrChart.draw();spo2Chart.draw();fatigueChart.draw()})}
+document.querySelectorAll('.nav-item').forEach(item=>item.addEventListener('click',()=>showView(item.dataset.view)));
+function updatePacketAge(){const el=document.getElementById('packet-age');if(!lastPacketAt){el.textContent=tr('No packets received');return}const age=Math.floor((Date.now()-lastPacketAt)/1000);el.textContent=age<2?(currentLanguage==='de'?'Letztes Datenpaket: gerade eben':'Last packet: just now'):(currentLanguage==='de'?`Letztes Datenpaket: vor ${age} s`:`Last packet: ${age}s ago`)}
+function sourceStatus(status){const dot=document.getElementById('conn-dot'),label=document.getElementById('conn-label');lastPacketAt=status.last_packet_at||lastPacketAt;dot.classList.toggle('live',!!status.connected);dot.classList.toggle('waiting',!status.connected);label.textContent=tr(status.connected?'Sensor stream live':'Sensor stream unavailable');updatePacketAge()}
+function connect(){const dot=document.getElementById('conn-dot'),label=document.getElementById('conn-label'),ws=new WebSocket('ws://'+location.host);ws.onopen=()=>{dot.classList.add('waiting');label.textContent=tr('Checking sensor')};ws.onmessage=e=>{try{const data=JSON.parse(e.data);if(data.type==='source_status')sourceStatus(data);else{lastPacketAt=Date.now();sourceStatus({connected:true,last_packet_at:lastPacketAt});update(data)}}catch{}};ws.onclose=()=>{dot.classList.remove('live');dot.classList.add('waiting');label.textContent=tr('Dashboard server offline');setTimeout(connect,2000)};ws.onerror=()=>ws.close()}
+setInterval(updatePacketAge,1000);translatePage();renderHistory();loadSessions();connect();
 </script>
 </body>
 </html>
