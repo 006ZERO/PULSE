@@ -1,7 +1,9 @@
 #include "sensor_packet.hpp"
 #include <arpa/inet.h>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <linux/i2c-dev.h>

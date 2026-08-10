@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const { spawnSync } = require('child_process');
 
 const root = path.join(__dirname, '..');
 const filesOnly = process.argv.includes('--files-only');
@@ -16,6 +17,8 @@ const requiredFiles = [
   'src/sensor_packet.hpp',
   'backends/server.js',
   'backends/processor.py',
+  'requirements.txt',
+  'setup.sh',
   'fatigue_model.pkl',
   'fatigue_scaler.pkl'
 ];
@@ -41,6 +44,9 @@ if (process.platform === 'linux') {
     try { fs.accessSync(target, fs.constants.X_OK); executable = true; } catch {}
     check(`Executable: ${binary}`, executable, executable ? 'ready' : 'missing or not executable');
   }
+  const python = path.join(root, '.venv', 'bin', 'python');
+  const pythonReady = fs.existsSync(python) && spawnSync(python, ['-c', 'import joblib,numpy,posix_ipc,sklearn,websockets']).status === 0;
+  check('Python inference environment', pythonReady, pythonReady ? 'ready' : 'run ./setup.sh');
 } else {
   check('Hardware runtime', true, 'Linux/Pi executables are checked on the workshop device', false);
 }
@@ -76,7 +82,7 @@ if (filesOnly) {
   });
   request.on('timeout', () => request.destroy(new Error('timeout')));
   request.on('error', () => {
-    check('Dashboard server', false, 'start PULSE before the live readiness check');
+    check('Dashboard server', false, 'run ./start.sh, then check from another terminal');
     check('Sensor telemetry', false, 'dashboard server unavailable');
     printAndExit();
   });

@@ -59,6 +59,7 @@ app.post('/api/sessions', (req, res) => {
     const session = {
         id: `session_${Date.now()}`,
         athlete: body.athlete.trim(),
+        title: typeof body.title === 'string' && body.title.trim() ? body.title.trim().slice(0, 60) : 'Performance Session',
         date: typeof body.date === 'string' ? body.date : new Date().toISOString(),
         duration: typeof body.duration === 'string' ? body.duration : '0:00',
         avg: Number.isFinite(body.avg) ? body.avg : null,

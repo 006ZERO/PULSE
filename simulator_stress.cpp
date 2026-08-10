@@ -2,8 +2,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <algorithm>
 #include <cmath>
 #include <chrono>
+#include <cstdlib>
 #include "sensor_packet.hpp"
 
 constexpr const char* SERVER_IP = "127.0.0.1";
