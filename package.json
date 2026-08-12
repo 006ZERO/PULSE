@@ -1,6 +1,7 @@
 {
   "scripts": {
     "start": "node backends/server.js",
+    "workshop:setup": "bash setup.sh",
     "workshop:check": "node tools/workshop-check.js"
   },
   "dependencies": {

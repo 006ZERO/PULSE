@@ -1,3 +1,5 @@
 node_modules/
 *.pptx
 output/
+.venv/
+data/sessions.json
