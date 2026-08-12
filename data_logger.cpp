@@ -24,7 +24,7 @@ int main() {
     if (shm_ptr == MAP_FAILED) return 1;
 
     std::ofstream file("training_session.csv");
-    file << "timestamp_us,accel_x,accel_y,accel_z,heart_rate\n";
+    file << "timestamp_us,accel_x,accel_y,accel_z,heart_rate,spo2,signal_quality\n";
     file.flush();
 
     int count = 0;
@@ -33,7 +33,9 @@ int main() {
              << shm_ptr->accel_x     << ","
              << shm_ptr->accel_y     << ","
              << shm_ptr->accel_z     << ","
-             << shm_ptr->heart_rate  << "\n";
+             << shm_ptr->heart_rate  << ","
+             << shm_ptr->spo2        << ","
+             << shm_ptr->signal_quality << "\n";
         if (++count % FLUSH_EVERY == 0) file.flush();
         usleep(500000);
     }

@@ -8,7 +8,7 @@ import joblib
 import numpy as np
 from collections import deque
 
-PACKET_FORMAT = 'fffIQ'
+PACKET_FORMAT = '=fffIffQ'
 PACKET_SIZE   = struct.calcsize(PACKET_FORMAT)
 
 model  = joblib.load('fatigue_model.pkl')
@@ -49,18 +49,18 @@ async def process_and_send():
         while True:
             map_file.seek(0)
             raw = map_file.read(PACKET_SIZE)
-            ax, ay, az, heart_rate, timestamp_us = struct.unpack(PACKET_FORMAT, raw)
+            ax, ay, az, heart_rate, measured_spo2, sensor_quality, timestamp_us = struct.unpack(PACKET_FORMAT, raw)
 
             mag  = float(np.sqrt(ax**2 + ay**2 + az**2))
-            spo2 = float(np.clip(99.0 - (heart_rate - 60) * 0.04 + np.random.normal(0, 0.3), 88, 100))
+            spo2 = float(measured_spo2) if measured_spo2 > 0 else 0.0
             rr   = estimate_resp_rate(mag_win)
 
-            pulse_ok = 35 <= heart_rate <= 230
+            pulse_ok = 35 <= heart_rate <= 230 and spo2 > 0 and sensor_quality >= 25
             motion_ok = bool(np.all(np.isfinite([ax, ay, az]))) and mag <= 16.0
             timestamp_ok = previous_timestamp is None or timestamp_us > previous_timestamp
             motion_artifact = mag > 4.0
-            hr_jump = previous_hr is not None and abs(heart_rate - previous_hr) > 35
-            quality = 100
+            hr_jump = pulse_ok and previous_hr is not None and abs(heart_rate - previous_hr) > 35
+            quality = int(np.clip(sensor_quality, 0, 100))
             if not pulse_ok: quality -= 70
             if not motion_ok: quality -= 70
             if not timestamp_ok: quality -= 40
@@ -68,16 +68,19 @@ async def process_and_send():
             if hr_jump: quality -= 20
             quality = int(np.clip(quality, 0, 100))
 
-            hr_win.append(heart_rate)
+            if pulse_ok:
+                hr_win.append(heart_rate)
             mag_win.append(mag)
 
             hrv   = compute_hrv(hr_win)
             trend = mov_trend(mag_win)
 
-            features      = np.array([[heart_rate, mag, ax, ay, az, hrv, trend, spo2, rr]])
-            prob          = model.predict_proba(scaler.transform(features))[0][1]
-            prob_win.append(prob)
-            smoothed_prob = float(np.mean(prob_win))
+            model_hr = heart_rate if pulse_ok else (previous_hr or 60)
+            model_spo2 = spo2 if spo2 > 0 else 95.0
+            features      = np.array([[model_hr, mag, ax, ay, az, hrv, trend, model_spo2, rr]])
+            prob = model.predict_proba(scaler.transform(features))[0][1] if pulse_ok else 0.0
+            if pulse_ok: prob_win.append(prob)
+            smoothed_prob = float(np.mean(prob_win)) if pulse_ok and prob_win else 0.0
 
             payload = json.dumps({
                 "accel_x":         round(ax, 2),
@@ -101,7 +104,7 @@ async def process_and_send():
             })
 
             await websocket.send(payload)
-            previous_hr = heart_rate
+            if pulse_ok: previous_hr = heart_rate
             previous_timestamp = timestamp_us
             await asyncio.sleep(0.1)
 

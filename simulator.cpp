@@ -32,6 +32,8 @@ int main() {
             accel_dist(rng),
             accel_dist(rng),
             hr_dist(rng),
+            97.5f,
+            92.0f,
             static_cast<uint64_t>(ts)
         };
 
