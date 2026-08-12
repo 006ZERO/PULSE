@@ -74,6 +74,8 @@ int main() {
 
         SensorPacket pkt{};
         pkt.heart_rate   = static_cast<uint32_t>(std::max(50.0f, hr_base + noise_hr));
+        pkt.spo2         = std::clamp(99.0f - (pkt.heart_rate - 60) * 0.035f, 92.0f, 99.0f);
+        pkt.signal_quality = std::clamp(96.0f - movement_scale * 8.0f, 70.0f, 96.0f);
         pkt.accel_x      = std::sin(t * 2.1f) * movement_scale + noise_ax;
         pkt.accel_y      = std::cos(t * 1.7f) * movement_scale + noise_ay;
         pkt.accel_z      = std::sin(t * 3.3f) * (movement_scale * 0.5f) + noise_az;
