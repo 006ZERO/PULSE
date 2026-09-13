@@ -50,6 +50,9 @@ async def process_and_send():
             map_file.seek(0)
             raw = map_file.read(PACKET_SIZE)
             ax, ay, az, heart_rate, measured_spo2, sensor_quality, timestamp_us = struct.unpack(PACKET_FORMAT, raw)
+            if not timestamp_us or timestamp_us == previous_timestamp:
+                await asyncio.sleep(0.1)
+                continue
 
             mag  = float(np.sqrt(ax**2 + ay**2 + az**2))
             spo2 = float(measured_spo2) if measured_spo2 > 0 else 0.0
@@ -67,6 +70,9 @@ async def process_and_send():
             if motion_artifact: quality -= 25
             if hr_jump: quality -= 20
             quality = int(np.clip(quality, 0, 100))
+            pulse_ok = pulse_ok and motion_ok and timestamp_ok and quality >= 25
+            if not pulse_ok:
+                prob_win.clear()
 
             if pulse_ok:
                 hr_win.append(heart_rate)
