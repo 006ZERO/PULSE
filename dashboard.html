@@ -187,6 +187,7 @@ function exportReport(){
   const tableEnd=65+rows.length*6.2;doc.setDrawColor(...line);doc.rect(14,56,182,Math.max(9,tableEnd-56));
   if(rows.length<26){const risks=rows.filter(r=>r.fatigue);const sy=Math.max(tableEnd+12,235);label('Fatigue event summary',14,sy);doc.setTextColor(...ink);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.text(risks.length?`${risks.length} recorded risk samples. Highest recorded fatigue score: ${Math.max(...risks.map(r=>r.score))}/100.`:'No fatigue risk samples were recorded in the exported interval.',14,sy+8)}
   footer(2);
+  if(window.appendWorkshopReport)window.appendWorkshopReport(doc);
   doc.save(`pulse_session_report_${Date.now()}.pdf`)
 }
 function formatDuration(seconds){return`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`}
@@ -213,4 +214,5 @@ function connect(){const dot=document.getElementById('conn-dot'),label=document.
 setInterval(updatePacketAge,1000);translatePage();renderHistory();renderAthleteOverview();loadSessions();connect();
 </script>
 </body>
+<script src="workshop.js"></script>
 </html>

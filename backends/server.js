@@ -39,6 +39,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
+// Readiness measures transport availability, not physiological accuracy.
     res.json({
         server: 'ok',
         telemetry: Date.now() - lastTelemetryAt < 3000 ? 'live' : 'stale',
@@ -65,7 +66,8 @@ app.post('/api/sessions', (req, res) => {
         avg: Number.isFinite(body.avg) ? body.avg : null,
         peak: Number.isFinite(body.peak) ? body.peak : null,
         status: 'Completed',
-        alerts: Number.isInteger(body.alerts) ? Math.max(0, body.alerts) : 0
+        alerts: Number.isInteger(body.alerts) ? Math.max(0, body.alerts) : 0,
+        evidence: sanitizeEvidence(body.evidence)
     };
     const sessions = readSessions();
     sessions.unshift(session);
@@ -101,3 +103,13 @@ setInterval(() => {
 }, 1000);
 
 server.listen(3000, () => console.log('http://localhost:3000'));
+app.get('/workshop.js', (req, res) => res.sendFile(path.join(__dirname, '..', 'workshop.js')));
+
+function sanitizeEvidence(value) {
+    const phases = ['Rest', 'Exercise', 'Recovery'];
+    const validTime = n => Number.isFinite(n) && n >= 0;
+    return {
+        events: (Array.isArray(value?.events) ? value.events : []).slice(0, 100).filter(e => e && phases.includes(e.phase) && validTime(e.seconds)).map(e => ({phase:e.phase, seconds:e.seconds})),
+        comparisons: (Array.isArray(value?.comparisons) ? value.comparisons : []).slice(0, 100).filter(r => r && phases.includes(r.phase) && validTime(r.seconds) && Number.isFinite(r.reference) && r.reference >= 30 && r.reference <= 240 && Number.isFinite(r.pulse) && r.pulse >= 35 && r.pulse <= 230).map(r => ({phase:r.phase,seconds:r.seconds,device:String(r.device||'').slice(0,80),reference:r.reference,pulse:r.pulse,error:r.pulse-r.reference}))
+    };
+}

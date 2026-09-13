@@ -1,0 +1,23 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const elements=new Map();
+function element(){return {style:{},textContent:'',value:'',innerHTML:'',classList:{},append(){},appendChild(){},createTHead:element,createTBody:element,insertRow:element,insertCell:element,after(){},replaceChildren(...items){this.children=items},querySelectorAll(){return []},click(){}}}
+const get=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id)};
+let timer,updates=0;
+const context={document:{createElement:element,getElementById:get,querySelector:()=>element()},sessionActive:true,sessionStart:Date.now(),athleteName:'Test',sessionTitle:'Test session',formatDuration:String,update:()=>updates++,startSession(){},updateSensorHealth(){},metric(id,value){get(id).textContent=value},updateRecovery(){},setInterval(fn){timer=fn},setTimeout(){},Blob,URL,console};
+vm.createContext(context);
+context.window={};context.saveSession=r=>r;context.renderHistory=()=>{};context.savedSessions=[];
+vm.runInContext(fs.readFileSync('workshop.js','utf8'),context);
+context.startSession();
+const packet={heart_rate:120,spo2:97,signal_quality:90,sensor_health:{timestamp:'ok',pulse:'ok'},movement_trend:.69,fatigue_warning:true};
+context.update(packet);
+assert.equal(updates,1);
+assert.match(get('experiment-observations').textContent,/31%/);
+get('reference-device').value='Reference';get('reference-hr').value='118';get('capture-reference').onclick();
+assert.match(get('reference-status').textContent,/2.0 BPM/);
+const saved=context.saveSession({athlete:'Test'});assert.equal(saved.evidence.comparisons[0].error,2);assert.equal(saved.evidence.events[0].phase,'Rest');
+const pdfLines=[];context.window.appendWorkshopReport({addPage(){},setFont(){},setFontSize(){},setTextColor(){},text(t){pdfLines.push(t)},splitTextToSize:t=>[t]});assert.ok(pdfLines.some(t=>t.includes('120 | +2')));
+context.update({...packet,sensor_health:{timestamp:'stale'}});
+assert.equal(updates,1);assert.equal(get('hr-val').textContent,'—');
+get('capture-reference').onclick();assert.match(get('reference-status').textContent,/required/);
+timer();assert.match(get('experiment-observations').textContent,/Poor signal/);
+console.log('PASS: observations, paired HR error, stale rejection and capture gating');
