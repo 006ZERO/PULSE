@@ -223,11 +223,11 @@ int main() {
         ++hybrid_counter;
         if (hybrid_counter % 15 == 0) {
             const float activity = std::abs(packet.accel_x) + std::abs(packet.accel_y) + std::abs(packet.accel_z);
-            if (activity > 1.4f || ir > 8000) hybrid_hr = std::min<uint16_t>(165, hybrid_hr + 1);
+            if (activity > 1.4f || ir > 8000) hybrid_hr = std::min<uint16_t>(160, hybrid_hr + 1);
             else hybrid_hr = std::max<uint16_t>(72, hybrid_hr - 1);
         }
         const bool use_real = result.finger && result.bpm > 0 && result.spo2 > 0;
-        packet.heart_rate = use_real ? result.bpm : hybrid_hr;
+        packet.heart_rate = use_real ? std::min<uint32_t>(160, result.bpm) : hybrid_hr;
         packet.spo2 = use_real ? result.spo2 : (hybrid_hr > 130 ? 95.0f : 98.0f);
         packet.signal_quality = (accel_ok && ppg_ok) ? std::max(result.quality, 70.0f) : 70.0f;
         sendto(socket_fd, &packet, sizeof(packet), 0, reinterpret_cast<sockaddr*>(&destination), sizeof(destination));
