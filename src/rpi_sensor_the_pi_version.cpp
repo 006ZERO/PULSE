@@ -221,7 +221,7 @@ int main() {
         // stream when the optical contact is temporarily unavailable. Real
         // PPG values take precedence whenever a valid finger signal exists.
         ++hybrid_counter;
-        if (hybrid_counter % 15 == 0) {
+        if (hybrid_counter % 5 == 0) {
             const float activity = std::abs(packet.accel_x) + std::abs(packet.accel_y) + std::abs(packet.accel_z);
             if (activity > 1.4f || ir > 8000) hybrid_hr = std::min<uint16_t>(160, hybrid_hr + 1);
             else hybrid_hr = std::max<uint16_t>(72, hybrid_hr - 1);
