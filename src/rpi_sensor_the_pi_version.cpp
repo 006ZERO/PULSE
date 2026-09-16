@@ -217,6 +217,11 @@ int main() {
         packet.timestamp_us = now_us();
         const float movement = std::sqrt(packet.accel_x * packet.accel_x + packet.accel_y * packet.accel_y + packet.accel_z * packet.accel_z);
         const PpgResult result = ppg_ok ? ppg.update(ir, red, movement, packet.timestamp_us) : PpgResult{};
+        static unsigned debug_counter = 0;
+        if (++debug_counter % 100 == 0) {
+            fprintf(stderr, "IR=%u RED=%u finger=%s bpm=%u spo2=%.1f quality=%.1f\\n",
+                    ir, red, result.finger ? "yes" : "no", result.bpm, result.spo2, result.quality);
+        }
         // Hardware mode reports only measured optical values. When contact is
         // missing, emit an invalid-quality packet so the UI can show No contact
         // instead of fabricating physiological readings.
