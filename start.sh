@@ -9,6 +9,7 @@ if [ ! -d node_modules ] || [ ! -x .venv/bin/python ] || [ ! -x backend ] || [ !
 fi
 
 pkill -f "./backend"        2>/dev/null || true
+pkill -f "^./rpi_sensor$"   2>/dev/null || true
 pkill -f "simulator_stress" 2>/dev/null || true
 pkill -f "node backends/server.js" 2>/dev/null || true
 pkill -f "processor.py"     2>/dev/null || true
