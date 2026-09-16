@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <initializer_list>
+#include <vector>
 #include <linux/i2c-dev.h>
 #include <netinet/in.h>
 #include <sys/ioctl.h>
@@ -143,16 +144,17 @@ public:
             const double red_rms = std::sqrt(red_sq_ / window_);
             if (ir_rms > 1 && ir_dc_ > 0 && red_dc_ > 0) {
                 const double ratio = (red_rms / red_dc_) / (ir_rms / ir_dc_);
-                spo2_ = std::clamp(static_cast<float>(110.0 - 25.0 * ratio), 70.0f, 100.0f);
+                const float candidate = std::clamp(static_cast<float>(110.0 - 25.0 * ratio), 70.0f, 100.0f);
+                spo2_ = spo2_ == 0.0f ? candidate : (0.2f * candidate + 0.8f * spo2_);
             }
             ir_sq_ = red_sq_ = 0;
             window_ = 0;
         }
 
-        if (bpm_count_ && timestamp - last_valid_ < 3000000) {
-            float sum = 0;
-            for (size_t i = 0; i < bpm_count_; ++i) sum += bpms_[i];
-            result.bpm = static_cast<uint32_t>(std::lround(sum / bpm_count_));
+        if (bpm_count_ >= 3 && timestamp - last_valid_ < 3000000) {
+            std::vector<float> recent(bpms_.begin(), bpms_.begin() + bpm_count_);
+            std::sort(recent.begin(), recent.end());
+            result.bpm = static_cast<uint32_t>(std::lround(recent[recent.size() / 2]));
         }
         result.spo2 = result.bpm ? spo2_ : 0;
         const float perfusion = static_cast<float>(envelope_ / std::max(ir_dc_, 1.0));
