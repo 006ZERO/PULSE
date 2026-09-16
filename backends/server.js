@@ -57,16 +57,22 @@ app.post('/api/sessions', (req, res) => {
     const body = req.body || {};
     if (typeof body.athlete !== 'string' || !body.athlete.trim() || body.athlete.length > 40)
         return res.status(400).json({ error: 'A valid athlete name is required.' });
+    const validDate = typeof body.date !== 'string' || Number.isNaN(Date.parse(body.date)) ? new Date().toISOString() : new Date(body.date).toISOString();
+    const duration = typeof body.duration === 'string' && /^\d{1,4}:[0-5]\d$/.test(body.duration) ? body.duration : '0:00';
+    const metric = value => Number.isFinite(value) && value >= 0 && value <= 240 ? Math.round(value * 10) / 10 : null;
+    const avg = metric(body.avg), peak = metric(body.peak);
+    if (avg !== null && peak !== null && peak < avg)
+        return res.status(400).json({ error: 'Peak heart rate cannot be lower than average heart rate.' });
     const session = {
         id: `session_${Date.now()}`,
         athlete: body.athlete.trim(),
         title: typeof body.title === 'string' && body.title.trim() ? body.title.trim().slice(0, 60) : 'Performance Session',
-        date: typeof body.date === 'string' ? body.date : new Date().toISOString(),
-        duration: typeof body.duration === 'string' ? body.duration : '0:00',
-        avg: Number.isFinite(body.avg) ? body.avg : null,
-        peak: Number.isFinite(body.peak) ? body.peak : null,
+        date: validDate,
+        duration,
+        avg,
+        peak,
         status: 'Completed',
-        alerts: Number.isInteger(body.alerts) ? Math.max(0, body.alerts) : 0,
+        alerts: Number.isInteger(body.alerts) ? Math.min(10000, Math.max(0, body.alerts)) : 0,
         evidence: sanitizeEvidence(body.evidence)
     };
     const sessions = readSessions();
