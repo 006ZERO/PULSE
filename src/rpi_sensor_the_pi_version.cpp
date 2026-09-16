@@ -163,8 +163,10 @@ public:
 int main() {
     // Pi 5 exposes the GPIO-header I²C mux as i2c-14 on this image;
     // retain i2c-1 as a fallback for older Pi OS images.
-    int accel_fd = open_first_i2c({"/dev/i2c-14", "/dev/i2c-1", "/dev/i2c-0"}, ADXL345_ADDR);
-    int ppg_fd = open_first_i2c({"/dev/i2c-0", "/dev/i2c-1", "/dev/i2c-14"}, MAX30100_ADDR);
+    // This Pi exposes the physical sensor buses as i2c-0 (ADXL345) and
+    // i2c-1 (MAX30100). Keep muxed/legacy buses only as fallbacks.
+    int accel_fd = open_first_i2c({"/dev/i2c-0", "/dev/i2c-1", "/dev/i2c-14"}, ADXL345_ADDR);
+    int ppg_fd = open_first_i2c({"/dev/i2c-1", "/dev/i2c-0", "/dev/i2c-14"}, MAX30100_ADDR);
     if (accel_fd < 0 || ppg_fd < 0) {
         fprintf(stderr, "Sensor error: expected ADXL345 at 0x53 and MAX30100 at 0x57 on an enabled I2C bus\n");
         return 1;

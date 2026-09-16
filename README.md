@@ -24,9 +24,9 @@ PULSE reads optical pulse and motion data from a wearable sensor node, processes
 ## Architecture
 
 ```text
-MAX30100 (I²C bus 0, 0x57) ─┐
+MAX30100 (I²C bus 1, 0x57) ─┐
                              ├─> C++ sensor process ─UDP:8080─> C++ shared-memory receiver
-ADXL345 (I²C bus 1, 0x53) ──┘                                      │
+ADXL345 (I²C bus 0, 0x53) ──┘                                      │
                                                                      ▼
                                                           Python inference process
                                                                      │ WebSocket
@@ -42,8 +42,8 @@ The default hardware program expects:
 
 | Sensor | Address | Linux device |
 |---|---:|---|
-| MAX30100 pulse/SpO₂ sensor | `0x57` | `/dev/i2c-0` |
-| ADXL345 accelerometer | `0x53` | `/dev/i2c-14` (Pi 5 mux; `/dev/i2c-1` fallback) |
+| MAX30100 pulse/SpO₂ sensor | `0x57` | `/dev/i2c-1` (bus fallback supported) |
+| ADXL345 accelerometer | `0x53` | `/dev/i2c-0` (bus fallback supported) |
 
 Enable both I²C buses before setup. If your board exposes the sensors on different buses, update the device paths in `src/rpi_sensor_the_pi_version.cpp` before compiling.
 
@@ -87,8 +87,9 @@ sudo i2cdetect -y 1
 
 Expected results:
 
-- Bus `0` contains `57` for the MAX30100.
-- Bus `14` contains `53` for the ADXL345 on Pi 5 images; older images may expose it on bus `1`.
+- Bus `1` contains `57` for the MAX30100 on this Pi image.
+- Bus `0` contains `53` for the ADXL345 on this Pi image.
+- The hardware program also tries the other enabled buses as fallbacks.
 
 Do not continue with hardware mode if either address is missing. Check power, ground, SDA/SCL wiring, I²C enablement, and the selected bus.
 
