@@ -152,10 +152,13 @@ public:
 };
 
 int main() {
-    int accel_fd = open_i2c("/dev/i2c-1", ADXL345_ADDR);
+    // Pi 5 exposes the GPIO-header I²C mux as i2c-14 on this image;
+    // retain i2c-1 as a fallback for older Pi OS images.
+    int accel_fd = open_i2c("/dev/i2c-14", ADXL345_ADDR);
+    if (accel_fd < 0) accel_fd = open_i2c("/dev/i2c-1", ADXL345_ADDR);
     int ppg_fd = open_i2c("/dev/i2c-0", MAX30100_ADDR);
     if (accel_fd < 0 || ppg_fd < 0) {
-        fprintf(stderr, "Sensor error: expected ADXL345 at /dev/i2c-1:0x53 and MAX30100 at /dev/i2c-0:0x57\n");
+        fprintf(stderr, "Sensor error: expected ADXL345 at /dev/i2c-14 (or i2c-1):0x53 and MAX30100 at /dev/i2c-0:0x57\n");
         return 1;
     }
     init_adxl345(accel_fd);
