@@ -63,7 +63,10 @@ static void init_max30100(int fd) {
     write_reg(fd, 0x03, 0x00); // reset overflow counter
     write_reg(fd, 0x04, 0x00); // reset FIFO read pointer
     write_reg(fd, 0x07, 0x47); // high resolution, 100 Hz, 1600 us pulse
-    write_reg(fd, 0x09, 0x8F); // red 27.1 mA, IR 50 mA
+    // Keep LED drive conservative across MAX30100 breakout variants. The
+    // previous 0x8F setting can saturate the ADC and make finger contact
+    // appear invalid even when the sensor is wired correctly.
+    write_reg(fd, 0x09, 0x24); // red=2.4 mA, IR=2.4 mA
     write_reg(fd, 0x06, 0x03); // SpO2 mode
 }
 
