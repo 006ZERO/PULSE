@@ -123,7 +123,9 @@ public:
 
         // Detect only clear systolic peaks. The old low threshold treated sensor
         // noise/motion as beats, producing impossible 160-190 BPM values.
-        const double peak_threshold = std::max(120.0, envelope_ * 1.10);
+        // MAX30100 boards vary in LED intensity; use a moderate adaptive gate
+        // so a real pulse is not discarded when the AC waveform is small.
+        const double peak_threshold = std::max(70.0, envelope_ * 0.75);
         if (previous1_ > previous2_ && previous1_ >= ir_ac && previous1_ > peak_threshold) {
             if (!last_beat_ || timestamp - last_beat_ >= 450000) {
                 if (last_beat_) {
@@ -163,7 +165,7 @@ public:
             window_ = 0;
         }
 
-        if (bpm_count_ >= 3 && timestamp - last_valid_ < 3000000) {
+        if (bpm_count_ >= 2 && timestamp - last_valid_ < 3000000) {
             std::vector<float> recent(bpms_.begin(), bpms_.begin() + bpm_count_);
             std::sort(recent.begin(), recent.end());
             result.bpm = static_cast<uint32_t>(std::lround(recent[recent.size() / 2]));
