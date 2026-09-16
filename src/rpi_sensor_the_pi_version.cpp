@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <fcntl.h>
+#include <initializer_list>
 #include <linux/i2c-dev.h>
 #include <netinet/in.h>
 #include <sys/ioctl.h>
@@ -31,6 +32,14 @@ static int open_i2c(const char* bus, uint8_t address) {
         return -1;
     }
     return fd;
+}
+
+static int open_first_i2c(std::initializer_list<const char*> buses, uint8_t address) {
+    for (const char* bus : buses) {
+        int fd = open_i2c(bus, address);
+        if (fd >= 0) return fd;
+    }
+    return -1;
 }
 
 static bool write_reg(int fd, uint8_t reg, uint8_t value) {
@@ -154,11 +163,10 @@ public:
 int main() {
     // Pi 5 exposes the GPIO-header I²C mux as i2c-14 on this image;
     // retain i2c-1 as a fallback for older Pi OS images.
-    int accel_fd = open_i2c("/dev/i2c-14", ADXL345_ADDR);
-    if (accel_fd < 0) accel_fd = open_i2c("/dev/i2c-1", ADXL345_ADDR);
-    int ppg_fd = open_i2c("/dev/i2c-0", MAX30100_ADDR);
+    int accel_fd = open_first_i2c({"/dev/i2c-14", "/dev/i2c-1", "/dev/i2c-0"}, ADXL345_ADDR);
+    int ppg_fd = open_first_i2c({"/dev/i2c-0", "/dev/i2c-1", "/dev/i2c-14"}, MAX30100_ADDR);
     if (accel_fd < 0 || ppg_fd < 0) {
-        fprintf(stderr, "Sensor error: expected ADXL345 at /dev/i2c-14 (or i2c-1):0x53 and MAX30100 at /dev/i2c-0:0x57\n");
+        fprintf(stderr, "Sensor error: expected ADXL345 at 0x53 and MAX30100 at 0x57 on an enabled I2C bus\n");
         return 1;
     }
     init_adxl345(accel_fd);
