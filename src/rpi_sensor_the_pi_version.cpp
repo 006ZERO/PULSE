@@ -121,12 +121,21 @@ public:
         red_sq_ += red_ac * red_ac;
         ++window_;
 
-        // Local maximum, adaptive amplitude threshold, and a physiological refractory period.
-        if (previous1_ > previous2_ && previous1_ >= ir_ac && previous1_ > std::max(35.0, envelope_ * 0.65)) {
-            if (!last_beat_ || timestamp - last_beat_ >= 300000) {
+        // Detect only clear systolic peaks. The old low threshold treated sensor
+        // noise/motion as beats, producing impossible 160-190 BPM values.
+        const double peak_threshold = std::max(120.0, envelope_ * 1.10);
+        if (previous1_ > previous2_ && previous1_ >= ir_ac && previous1_ > peak_threshold) {
+            if (!last_beat_ || timestamp - last_beat_ >= 450000) {
                 if (last_beat_) {
                     const float bpm = 60000000.0f / static_cast<float>(timestamp - last_beat_);
-                    if (bpm >= 40 && bpm <= 210) {
+                    bool consistent = bpm >= 45 && bpm <= 180;
+                    if (consistent && bpm_count_ >= 2) {
+                        std::vector<float> prior(bpms_.begin(), bpms_.begin() + bpm_count_);
+                        std::sort(prior.begin(), prior.end());
+                        const float median = prior[prior.size() / 2];
+                        consistent = std::abs(bpm - median) <= std::max(20.0f, median * 0.22f);
+                    }
+                    if (consistent) {
                         bpms_[bpm_cursor_] = bpm;
                         bpm_cursor_ = (bpm_cursor_ + 1) % bpms_.size();
                         bpm_count_ = std::min(bpms_.size(), bpm_count_ + 1);
@@ -144,8 +153,11 @@ public:
             const double red_rms = std::sqrt(red_sq_ / window_);
             if (ir_rms > 1 && ir_dc_ > 0 && red_dc_ > 0) {
                 const double ratio = (red_rms / red_dc_) / (ir_rms / ir_dc_);
-                const float candidate = std::clamp(static_cast<float>(110.0 - 25.0 * ratio), 70.0f, 100.0f);
-                spo2_ = spo2_ == 0.0f ? candidate : (0.2f * candidate + 0.8f * spo2_);
+                const float candidate = static_cast<float>(110.0 - 25.0 * ratio);
+                // Do not publish implausible optical estimates as real SpO2.
+                if (std::isfinite(candidate) && candidate >= 90.0f && candidate <= 100.0f) {
+                    spo2_ = spo2_ == 0.0f ? candidate : (0.2f * candidate + 0.8f * spo2_);
+                }
             }
             ir_sq_ = red_sq_ = 0;
             window_ = 0;
