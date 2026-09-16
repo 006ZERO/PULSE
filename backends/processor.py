@@ -58,7 +58,10 @@ async def process_and_send():
             spo2 = float(measured_spo2) if measured_spo2 > 0 else 0.0
             rr   = estimate_resp_rate(mag_win)
 
-            pulse_ok = 35 <= heart_rate <= 230 and spo2 > 0 and sensor_quality >= 25
+            # HR is still a valid pulse reading while SpO2 is being recalculated.
+            # Do not mark the whole wearable disconnected just because one
+            # optical channel is temporarily unavailable.
+            pulse_ok = 35 <= heart_rate <= 230 and sensor_quality >= 25
             motion_ok = bool(np.all(np.isfinite([ax, ay, az]))) and mag <= 16.0
             timestamp_ok = previous_timestamp is None or timestamp_us > previous_timestamp
             motion_artifact = mag > 4.0
