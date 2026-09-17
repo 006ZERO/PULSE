@@ -224,7 +224,7 @@ int main() {
         if (hybrid_counter % 5 == 0) {
             const float magnitude = std::sqrt(packet.accel_x * packet.accel_x + packet.accel_y * packet.accel_y + packet.accel_z * packet.accel_z);
             const float activity = std::abs(magnitude - 1.0f);
-            if (activity > 0.15f) hybrid_hr = std::min<uint16_t>(160, hybrid_hr + 1);
+            if (activity > 0.03f) hybrid_hr = std::min<uint16_t>(160, hybrid_hr + 1);
             else hybrid_hr = std::max<uint16_t>(72, hybrid_hr - 1);
         }
         // Match the hackathon demo exactly: publish the smooth movement-driven
