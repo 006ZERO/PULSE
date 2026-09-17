@@ -175,11 +175,11 @@ int main() {
     // retain i2c-1 as a fallback for older Pi OS images.
     // This Pi exposes the physical sensor buses as i2c-0 (ADXL345) and
     // i2c-1 (MAX30100). Keep muxed/legacy buses only as fallbacks.
-    bool accel_mpu = false;
-    int accel_fd = open_first_i2c({"/dev/i2c-0", "/dev/i2c-1", "/dev/i2c-14"}, ADXL345_ADDR);
+    bool accel_mpu = true;
+    int accel_fd = open_first_i2c({"/dev/i2c-0", "/dev/i2c-1", "/dev/i2c-14"}, MPU6050_ADDR);
     if (accel_fd < 0) {
-        accel_mpu = true;
-        accel_fd = open_first_i2c({"/dev/i2c-0", "/dev/i2c-1", "/dev/i2c-14"}, MPU6050_ADDR);
+        accel_mpu = false;
+        accel_fd = open_first_i2c({"/dev/i2c-0", "/dev/i2c-1", "/dev/i2c-14"}, ADXL345_ADDR);
     }
     int ppg_fd = open_first_i2c({"/dev/i2c-1", "/dev/i2c-0", "/dev/i2c-14"}, MAX30100_ADDR);
     if (accel_fd < 0 || ppg_fd < 0) {
