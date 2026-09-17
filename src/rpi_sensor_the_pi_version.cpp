@@ -229,8 +229,6 @@ int main() {
         // Match the hackathon demo exactly: publish the smooth movement-driven
         // ramp, never replace it with a raw beat-detector jump.
         packet.heart_rate = hybrid_hr;
-        packet.spo2 = hybrid_hr > 130 ? 95.0f : 98.0f;
-        packet.signal_quality = 70.0f;
         sendto(socket_fd, &packet, sizeof(packet), 0, reinterpret_cast<sockaddr*>(&destination), sizeof(destination));
         usleep(LOOP_US);
     }
