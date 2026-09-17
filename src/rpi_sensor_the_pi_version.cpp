@@ -222,8 +222,9 @@ int main() {
         // PPG values take precedence whenever a valid finger signal exists.
         ++hybrid_counter;
         if (hybrid_counter % 5 == 0) {
-            const float activity = std::abs(packet.accel_x) + std::abs(packet.accel_y) + std::abs(packet.accel_z);
-            if (activity > 0.35f) hybrid_hr = std::min<uint16_t>(160, hybrid_hr + 1);
+            const float magnitude = std::sqrt(packet.accel_x * packet.accel_x + packet.accel_y * packet.accel_y + packet.accel_z * packet.accel_z);
+            const float activity = std::abs(magnitude - 1.0f);
+            if (activity > 0.15f) hybrid_hr = std::min<uint16_t>(160, hybrid_hr + 1);
             else hybrid_hr = std::max<uint16_t>(72, hybrid_hr - 1);
         }
         // Match the hackathon demo exactly: publish the smooth movement-driven
