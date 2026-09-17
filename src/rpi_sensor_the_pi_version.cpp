@@ -223,11 +223,9 @@ int main() {
         ++hybrid_counter;
         if (hybrid_counter % 5 == 0) {
             const float activity = std::abs(packet.accel_x) + std::abs(packet.accel_y) + std::abs(packet.accel_z);
-            if (activity > 1.4f || ir > 8000) hybrid_hr = std::min<uint16_t>(160, hybrid_hr + 1);
+            if (activity > 1.4f || ir > 8000) hybrid_hr = std::min<uint16_t>(165, hybrid_hr + 1);
             else hybrid_hr = std::max<uint16_t>(72, hybrid_hr - 1);
         }
-        // Match the hackathon demo exactly: publish the smooth movement-driven
-        // ramp, never replace it with a raw beat-detector jump.
         packet.heart_rate = hybrid_hr;
         packet.spo2 = hybrid_hr > 130 ? 95.0f : 98.0f;
         packet.signal_quality = 70.0f;
