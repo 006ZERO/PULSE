@@ -202,6 +202,7 @@ int main() {
     PpgProcessor ppg;
     uint16_t hybrid_hr = 72;
     int hybrid_counter = 0;
+    int diagnostic_counter = 0;
     fprintf(stdout, "Real sensor stream active on %s:%d\n", SERVER_IP, PORT);
 
     while (true) {
@@ -223,7 +224,8 @@ int main() {
         ++hybrid_counter;
         if (hybrid_counter % 5 == 0) {
             const float magnitude = std::sqrt(packet.accel_x * packet.accel_x + packet.accel_y * packet.accel_y + packet.accel_z * packet.accel_z);
-            const float activity = std::abs(magnitude - 1.0f);
+        const float activity = std::abs(magnitude - 1.0f);
+        if (++diagnostic_counter % 100 == 0) fprintf(stderr, "AX=%.2f AY=%.2f AZ=%.2f activity=%.2f HR=%u\n", packet.accel_x, packet.accel_y, packet.accel_z, activity, hybrid_hr);
             if (activity > 0.03f) hybrid_hr = std::min<uint16_t>(160, hybrid_hr + 1);
             else hybrid_hr = std::max<uint16_t>(72, hybrid_hr - 1);
         }
